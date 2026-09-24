@@ -22,21 +22,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Restore source payload
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t parts < <(find payload -maxdepth 1 -name 'nulltrace-source.tgz.b64.part-*' | sort -V)
-          test "${#parts[@]}" -eq 8
-          cat "${parts[@]}" | tr -d '\r\n' > /tmp/nulltrace-source.tgz.b64
-          test "$(wc -c < /tmp/nulltrace-source.tgz.b64)" -gt 30000
-          base64 --decode /tmp/nulltrace-source.tgz.b64 > /tmp/nulltrace-source.tgz
-          mkdir -p /tmp/nulltrace-src
-          tar -xzf /tmp/nulltrace-source.tgz -C /tmp/nulltrace-src
-          cp -R /tmp/nulltrace-src/. .
-          test -f package.json
-          test -f src/main.tsx
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -60,31 +45,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure GitHub Pages is enabled
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          api="https://api.github.com/repos/${GH_REPO}/pages"
-          status=$(curl -L -sS -o /tmp/pages.json -w "%{http_code}" \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${api}")
-          if [ "${status}" = "404" ]; then
-            curl -L -sS -X POST \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              -d '{"build_type":"workflow"}' \
-              "${api}"
-          elif [ "${status}" != "200" ]; then
-            cat /tmp/pages.json
-            exit 1
-          fi
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
