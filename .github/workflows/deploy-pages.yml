@@ -23,10 +23,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Restore source payload
+        shell: bash
         run: |
-          cat payload/nulltrace-source.tgz.b64.part-* > /tmp/nulltrace-source.tgz.b64
-          base64 -d /tmp/nulltrace-source.tgz.b64 > /tmp/nulltrace-source.tgz
-          tar -xzf /tmp/nulltrace-source.tgz
+          set -euo pipefail
+          mapfile -t parts < <(find payload -maxdepth 1 -name 'nulltrace-source.tgz.b64.part-*' | sort -V)
+          test "${#parts[@]}" -eq 8
+          cat "${parts[@]}" | tr -d '\r\n' > /tmp/nulltrace-source.tgz.b64
+          test "$(wc -c < /tmp/nulltrace-source.tgz.b64)" -gt 30000
+          base64 --decode /tmp/nulltrace-source.tgz.b64 > /tmp/nulltrace-source.tgz
+          mkdir -p /tmp/nulltrace-src
+          tar -xzf /tmp/nulltrace-source.tgz -C /tmp/nulltrace-src
+          cp -R /tmp/nulltrace-src/. .
+          test -f package.json
+          test -f src/main.tsx
 
       - name: Setup Node
         uses: actions/setup-node@v4
