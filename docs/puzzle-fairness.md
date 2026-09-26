@@ -130,3 +130,30 @@ Remaining risk:
 
 - `4093` can still be submitted quickly without observing the glyph. This is allowed but recorded as `INCOMPLETE_EVIDENCE`.
 - The computed-style clue requires browser inspection skill. SMALL SIGNAL levels reduce this barrier without claiming server-grade proof.
+
+## Chapter 02 Audit
+
+Current Chapter 02 coverage:
+
+| Fairness part | Implementation |
+| --- | --- |
+| Entry Signal | `DISPLAYED ENTRIES // 03` and `DOCUMENT ENTRIES // 07` on `#observation-archive` |
+| Method Signal | runtime DOM Comment plus document/archive count mismatch |
+| Output Contract | record evidence requires 4 IDs; command format is 4 words, case-insensitive, space-separated |
+| Verification | omitted record IDs must exist, be unique, be omitted records, and restore the command in `data-sequence` order |
+
+Chapter 02 assist:
+
+- Level 1: `THE VIEW IS NOT / THE DOCUMENT.`
+- Level 2: `COUNT THE CHILDREN. / NOT THE PIXELS.`
+- Level 3: `#observation-archive`, `[data-record-state="omitted"]`, `data-sequence`
+
+Accessibility alternative:
+
+- Assist Level 3 exposes a document transcript table.
+- The transcript lists element type, record ID, state, sequence, and fragment.
+- The transcript does not assemble the final command automatically.
+
+Remaining risk:
+
+- Hidden DOM inspection is still a source-level skill. The transcript path exists for keyboard and screen-reader users who cannot comfortably inspect browser developer tooling.

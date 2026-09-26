@@ -13,11 +13,12 @@ import type { StageReceipt } from "../domain/argTypes";
 import { RevealItem } from "./RevealItem";
 
 type ReceiptCardProps = {
+  onOpenNextTrace?: () => void;
   onNewSession: () => Promise<void>;
   receipt: StageReceipt;
 };
 
-export function ReceiptCard({ onNewSession, receipt }: ReceiptCardProps) {
+export function ReceiptCard({ onNewSession, onOpenNextTrace, receipt }: ReceiptCardProps) {
   const [jsonVisible, setJsonVisible] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
     "idle",
@@ -176,6 +177,24 @@ export function ReceiptCard({ onNewSession, receipt }: ReceiptCardProps) {
           ))}
         </ol>
       </details>
+
+      {onOpenNextTrace && (
+        <div
+          className="receipt-next-trace"
+          onClick={onOpenNextTrace}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onOpenNextTrace();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <span>NEXT TRACE // AVAILABLE</span>
+          <strong>DOCUMENT // PARTIAL</strong>
+        </div>
+      )}
 
       <div className="receipt-validation" aria-hidden="true">
         <div className="receipt-fingerprint">

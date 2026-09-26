@@ -12,7 +12,11 @@ import {
   updateSession,
 } from "../domain/argFlow";
 import { createStageReceipt } from "../domain/receiptFactory";
-import { LocalStorageArgRepository } from "../storage/localStorageArgRepository";
+import {
+  LocalRecordUnreadableError,
+  LocalStorageArgRepository,
+  type LocalRecordRecovery,
+} from "../storage/localStorageArgRepository";
 import { navigateTo } from "../router/useHashRoute";
 
 type ArgSessionActions = {
@@ -27,11 +31,13 @@ type ArgSessionActions = {
   commitVerificationPath: () => void;
   issueReceipt: () => Promise<void>;
   resetSession: () => Promise<void>;
+  startNewSessionAfterRecovery: () => Promise<void>;
 };
 
 export type ArgSessionModel = {
   state: ArgSessionState | null;
   isLoading: boolean;
+  recovery: LocalRecordRecovery | null;
   actions: ArgSessionActions;
 };
 
@@ -51,6 +57,7 @@ export function useArgSession(): ArgSessionModel {
   const repository = useMemo(() => new LocalStorageArgRepository(), []);
   const [state, setState] = useState<ArgSessionState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [recovery, setRecovery] = useState<LocalRecordRecovery | null>(null);
   const stateRef = useRef<ArgSessionState | null>(null);
 
   useEffect(() => {
@@ -61,13 +68,25 @@ export function useArgSession(): ArgSessionModel {
     let isMounted = true;
 
     async function restoreSession() {
-      const sessionId = await repository.getOrCreateSessionId();
-      const savedState = await repository.load();
-      const nextState = savedState ?? createInitialSession(sessionId);
+      try {
+        const sessionId = await repository.getOrCreateSessionId();
+        const savedState = await repository.load();
+        const nextState = savedState ?? createInitialSession(sessionId);
 
-      if (isMounted) {
-        setState(nextState);
-        setIsLoading(false);
+        if (isMounted) {
+          setState(nextState);
+          setRecovery(null);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        if (isMounted && error instanceof LocalRecordUnreadableError) {
+          setState(null);
+          setRecovery(error.recovery);
+          setIsLoading(false);
+          return;
+        }
+
+        throw error;
       }
     }
 
@@ -79,12 +98,12 @@ export function useArgSession(): ArgSessionModel {
   }, [repository]);
 
   useEffect(() => {
-    if (!state) {
+    if (!state || recovery) {
       return;
     }
 
     void repository.save(state);
-  }, [repository, state]);
+  }, [repository, recovery, state]);
 
   const actions = useMemo<ArgSessionActions>(
     () => ({
@@ -382,10 +401,16 @@ export function useArgSession(): ArgSessionModel {
       },
 
       async resetSession() {
-        await repository.clear();
-        const sessionId = await repository.getOrCreateSessionId();
-        const nextState = createInitialSession(sessionId);
+        const nextState = await repository.startNewSession();
         setState(nextState);
+        setRecovery(null);
+        navigateTo("console");
+      },
+
+      async startNewSessionAfterRecovery() {
+        const nextState = await repository.startNewSession();
+        setState(nextState);
+        setRecovery(null);
         navigateTo("console");
       },
     }),
@@ -395,6 +420,7 @@ export function useArgSession(): ArgSessionModel {
   return {
     state,
     isLoading,
+    recovery,
     actions,
   };
 }

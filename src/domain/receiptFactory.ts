@@ -21,7 +21,7 @@ export async function createStageReceipt(state: ArgSessionState, now = new Date(
     },
     evidenceSummary: createEvidenceSummary(state),
   };
-  const checksum = await sha256(stableStringify(payload));
+  const checksum = await createLocalChecksum(payload);
 
   return {
     ...payload,
@@ -94,6 +94,15 @@ export function stableStringify(value: unknown): string {
     .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`);
 
   return `{${entries.join(",")}}`;
+}
+
+export async function createLocalChecksum(payload: unknown): Promise<string> {
+  return sha256(stableStringify(payload));
+}
+
+export async function verifyStageReceipt(receipt: StageReceipt): Promise<boolean> {
+  const { checksum, ...payload } = receipt;
+  return checksum === (await createLocalChecksum(payload));
 }
 
 function createReceiptId(): string {

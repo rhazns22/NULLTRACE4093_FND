@@ -3,8 +3,18 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 const stateKey = "nulltrace-4093.arg-state.v1";
+const stateKeyV2 = "nulltrace-4093.arg-state.v2";
 const session = (page: Page) =>
-  page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), stateKey);
+  page.evaluate(
+    ({ key, keyV2 }) => {
+      const rawV2 = localStorage.getItem(keyV2);
+      if (rawV2) return JSON.parse(rawV2).traces.TRACE_01;
+      return JSON.parse(localStorage.getItem(key)!);
+    },
+    { key: stateKey, keyV2: stateKeyV2 },
+  );
+const sessionV2 = (page: Page) =>
+  page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), stateKeyV2);
 
 async function entry(page: Page) {
   await page.goto("/");
@@ -452,6 +462,334 @@ test("legacy v1 receipt without evidence summary restores without empty UI", asy
   await expect(page.locator(".receipt-card")).toContainText("Assist Level");
   expect((await session(page)).entryInteraction.assistLevel).toBe(0);
   expect((await session(page)).receipt.evidenceSummary).toBeUndefined();
+});
+
+test("trace 02 is locked without a valid trace 01 receipt", async ({ page }) => {
+  await page.goto("/#/trace/02");
+  await expect(page.getByText("STATUS // PREVIOUS EVIDENCE REQUIRED")).toBeVisible();
+  await expect(page.getByText("NO RECORD CAN BE RESTORED")).toBeVisible();
+  await page.getByRole("button", { name: "Return to Trace 01" }).click();
+  await expect(page.locator(".glyph-control")).toBeVisible();
+});
+
+test("v1 in-progress state migrates to v2 without deleting v1", async ({ page }) => {
+  const v1State = {
+    currentStage: "INPUT_DISCOVERED",
+    sessionId: "33333333-3333-4333-8333-333333333333",
+    startedAt: "2026-01-01T00:00:00.000Z",
+    inputAttempts: 0,
+    investigationFlags: {
+      entrySignalReviewed: true,
+      glyphInvestigated: true,
+      inputCipherFound: true,
+      cssComputedClueFound: false,
+      verificationPathCommitted: false,
+    },
+    entryInteraction: {
+      inputDiscoveryMethod: "glyph_keyboard_enter",
+      inputDiscoveredAt: "2026-01-01T00:00:01.000Z",
+      firstInputAt: null,
+      lastSubmittedAt: null,
+      timeToFirstInputMs: null,
+      timeToLastSubmitMs: null,
+      routeProfile: "UNDETERMINED",
+      lastInputResponse: null,
+      unverifiedDialogOpen: false,
+      unverifiedDialogViewed: false,
+      unverifiedDialogDismissedAt: null,
+      styleSignalSubmittedAt: null,
+      assistUsed: false,
+      attempts: [],
+    },
+    solvePath: [],
+    receipt: null,
+  };
+
+  await page.addInitScript(
+    ({ key, state }) => {
+      localStorage.setItem("nulltrace-4093.session-id.v1", state.sessionId);
+      localStorage.setItem(key, JSON.stringify(state));
+    },
+    { key: stateKey, state: v1State },
+  );
+
+  await page.goto("/");
+  await expect(page.locator("#entry-code")).toBeVisible();
+  const migrated = await sessionV2(page);
+  expect(migrated.schemaVersion).toBe(2);
+  expect(migrated.traces.TRACE_01.currentStage).toBe("INPUT_DISCOVERED");
+  expect(migrated.traces.TRACE_02.currentStage).toBe("LOCKED");
+  expect(await page.evaluate((key) => localStorage.getItem(key), stateKey)).not.toBeNull();
+});
+
+test("existing v2 state prevents duplicate v1 migration", async ({ page }) => {
+  await page.addInitScript(
+    ({ key, keyV2 }) => {
+      localStorage.setItem("nulltrace-4093.session-id.v1", "44444444-4444-4444-8444-444444444444");
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          currentStage: "ENTRY",
+          sessionId: "v1-should-not-win",
+          startedAt: "2026-01-01T00:00:00.000Z",
+          inputAttempts: 0,
+          investigationFlags: {},
+          entryInteraction: {},
+          solvePath: [],
+          receipt: null,
+        }),
+      );
+      localStorage.setItem(
+        keyV2,
+        JSON.stringify({
+          schemaVersion: 2,
+          sessionId: "44444444-4444-4444-8444-444444444444",
+          currentTrace: "TRACE_02",
+          traces: {
+            TRACE_01: {
+              currentStage: "ENTRY",
+              sessionId: "44444444-4444-4444-8444-444444444444",
+              startedAt: "2026-01-01T00:00:00.000Z",
+              inputAttempts: 0,
+              investigationFlags: {},
+              entryInteraction: {},
+              solvePath: [],
+              receipt: null,
+            },
+            TRACE_02: {
+              currentStage: "ENTRY",
+              startedAt: "2026-01-01T00:00:02.000Z",
+              completedAt: null,
+              attempts: 0,
+              assistLevel: 2,
+              discoveredRecordIds: [],
+              submittedCommand: null,
+              solvePath: [],
+              lastError: null,
+              restoredAt: null,
+            },
+          },
+          receipts: {},
+        }),
+      );
+    },
+    { key: stateKey, keyV2: stateKeyV2 },
+  );
+
+  await page.goto("/");
+  const migrated = await sessionV2(page);
+  expect(migrated.sessionId).toBe("44444444-4444-4444-8444-444444444444");
+  expect(migrated.currentTrace).toBe("TRACE_02");
+  expect(migrated.traces.TRACE_02.assistLevel).toBe(2);
+});
+
+test("new session overwrites v2 without resurrecting preserved v1 receipt", async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ key }) => {
+      const legacyReceipt = {
+        receiptId: "NT-01-55555555-5555-4555-8555-555555555555",
+        sessionId: "55555555-5555-4555-8555-555555555555",
+        stage: 1,
+        status: "VERIFIED",
+        issuedAt: "2026-01-01T00:00:00.000Z",
+        elapsedSeconds: 1,
+        inputAttempts: 1,
+        solvePath: [],
+        assistUsed: false,
+        evidence: {
+          glyphInvestigated: false,
+          inputDiscoveryMethod: "numeric_key",
+          unverifiedDialogViewed: true,
+          cssClueSolved: true,
+        },
+        checksum: "0".repeat(64),
+      };
+      localStorage.setItem("nulltrace-4093.session-id.v1", legacyReceipt.sessionId);
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          currentStage: "RECEIPT_ISSUED",
+          sessionId: legacyReceipt.sessionId,
+          startedAt: "2026-01-01T00:00:00.000Z",
+          inputAttempts: 1,
+          investigationFlags: {
+            entrySignalReviewed: false,
+            glyphInvestigated: false,
+            inputCipherFound: false,
+            cssComputedClueFound: true,
+            verificationPathCommitted: true,
+          },
+          entryInteraction: {
+            inputDiscoveryMethod: "numeric_key",
+            routeProfile: "FAST_PATH",
+            unverifiedDialogViewed: true,
+            assistUsed: false,
+            attempts: [],
+          },
+          solvePath: [],
+          receipt: legacyReceipt,
+        }),
+      );
+    },
+    { key: stateKey },
+  );
+
+  await page.goto("/");
+  await expect(page.locator(".receipt-card")).toBeVisible();
+  expect((await sessionV2(page)).receipts.TRACE_01?.receiptId).toBe(
+    "NT-01-55555555-5555-4555-8555-555555555555",
+  );
+  await page.getByRole("button", { name: "New Session", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Confirm New Session", exact: true })
+    .click();
+  await expect(page.locator(".glyph-control")).toBeVisible();
+  const newSession = await sessionV2(page);
+  expect(newSession.receipts.TRACE_01).toBeUndefined();
+  await page.reload();
+  await expect(page.locator(".glyph-control")).toBeVisible();
+  expect((await sessionV2(page)).receipts.TRACE_01).toBeUndefined();
+  expect(await page.evaluate((key) => localStorage.getItem(key), stateKey)).not.toBeNull();
+});
+
+test("unreadable local record shows recovery screen before overwrite", async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ keyV2 }) => {
+      localStorage.setItem("nulltrace-4093.session-id.v1", "66666666-6666-4666-8666-666666666666");
+      localStorage.setItem(keyV2, "{ this is not json");
+    },
+    { keyV2: stateKeyV2 },
+  );
+
+  await page.goto("/");
+  await expect(page.getByText("LOCAL RECORD // UNREADABLE")).toBeVisible();
+  await expect(page.getByText("AUTOMATIC RECOVERY // UNAVAILABLE")).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), stateKeyV2)).toBe("{ this is not json");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download Unreadable JSON" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe(`${stateKeyV2}.unreadable.json`);
+
+  await page.getByRole("button", { name: "Start New Session" }).click();
+  expect(await page.evaluate((key) => localStorage.getItem(key), stateKeyV2)).toBe("{ this is not json");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByText("LOCAL RECORD // UNREADABLE")).toBeVisible();
+
+  await page.getByRole("button", { name: "Start New Session" }).click();
+  await page
+    .getByRole("button", { name: "Confirm New Session" })
+    .click();
+  await expect(page.locator(".glyph-control")).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), stateKeyV2)).toContain('"schemaVersion":2');
+});
+
+test("trace 02 hidden DOM, evidence, command and receipt preserve trace 01", async ({
+  page,
+}) => {
+  await fastEntry(page);
+  await solve(page);
+  const trace01Receipt = await issue(page);
+  await page.getByRole("button", { name: /NEXT TRACE/ }).click();
+  await expect(page.locator("#observation-archive")).toBeVisible();
+
+  const archive = page.locator("#observation-archive");
+  await expect(archive.locator("article")).toHaveCount(7);
+  await expect(archive.locator("article:not([hidden])")).toHaveCount(3);
+  await expect(archive.locator('[data-record-state="omitted"]')).toHaveCount(4);
+  await expect(archive.locator('[data-sequence="2"][data-fragment="RESTORE"]')).toHaveCount(1);
+  await expect(archive.locator('[data-sequence="3"][data-fragment="THE"]')).toHaveCount(1);
+  await expect(archive.locator('[data-sequence="5"][data-fragment="OMITTED"]')).toHaveCount(1);
+  await expect(archive.locator('[data-sequence="7"][data-fragment="RECORD"]')).toHaveCount(1);
+
+  const commentText = await page.locator("#observation-archive").evaluate((node) =>
+    Array.from(node.childNodes)
+      .filter((child) => child.nodeType === Node.COMMENT_NODE)
+      .map((child) => child.textContent)
+      .join("\n"),
+  );
+  expect(commentText).toContain("NT-TRACE-02");
+  expect(commentText).toContain("THE DOCUMENT CONTAINS SEVEN.");
+
+  const attributes = await archive.locator("article").evaluateAll((nodes) =>
+    nodes.flatMap((node) =>
+      Array.from(node.attributes).map((attribute) => attribute.value),
+    ),
+  );
+  expect(attributes).not.toContain("RESTORE THE OMITTED RECORD");
+
+  await page.locator("#trace02-evidence").fill("NT-02-R02 NT-02-R02 NT-02-R05 NT-02-R07");
+  await page.locator("#trace02-evidence").press("Enter");
+  await expect(page.locator(".trace02-feedback")).toContainText("DUPLICATE");
+
+  await page.locator("#trace02-evidence").fill("NT-02-R02 NT-02-R03 NT-02-R05 NT-02-R07");
+  await page.locator("#trace02-evidence").press("Enter");
+  await expect(page.locator(".trace02-feedback")).toContainText("RECORD EVIDENCE ACCEPTED");
+
+  await page.locator("#trace02-command").fill("restore the wrong record");
+  await page.locator("#trace02-command").press("Enter");
+  await expect(page.locator(".trace02-feedback")).toContainText(
+    "COMMAND REJECTED. DOCUMENT ORDER DOES NOT MATCH.",
+  );
+
+  await page.locator("#trace02-command").fill("  restore   the omitted record  ");
+  await page.locator("#trace02-command").press("Enter");
+  await page.getByRole("button", { name: "Issue Trace 02 Receipt" }).click();
+  await expect(page.locator(".trace02-receipt")).toBeVisible();
+  await expect(page.locator(".trace02-receipt")).toContainText("DOCUMENT // RESTORED");
+
+  const nextState = await sessionV2(page);
+  expect(nextState.receipts.TRACE_01.receiptId).toBe(trace01Receipt.receiptId);
+  expect(nextState.receipts.TRACE_02.receiptId).toMatch(/^NT-02-/);
+  expect(nextState.receipts.TRACE_02.evidenceSummary.evidenceIds).toEqual(
+    expect.arrayContaining([
+      "TRACE_02_DOCUMENT_GAP",
+      "NT-02-R02",
+      "NT-02-R03",
+      "NT-02-R05",
+      "NT-02-R07",
+      "TRACE_02_RESTORED_COMMAND",
+    ]),
+  );
+
+  await page.reload();
+  await expect(page.locator(".trace02-receipt")).toContainText(
+    nextState.receipts.TRACE_02.receiptId,
+  );
+});
+
+test("trace 02 assist level 3 transcript supports keyboard completion", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await fastEntry(page);
+  await solve(page);
+  await issue(page);
+  await page.keyboard.press("Tab");
+  while (!(await page.getByRole("button", { name: /NEXT TRACE/ }).evaluate((node) => node === document.activeElement))) {
+    await page.keyboard.press("Tab");
+  }
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#observation-archive")).toBeVisible();
+
+  for (let level = 1; level <= 3; level++) {
+    await page.getByRole("button", { name: /SMALL SIGNAL/ }).click();
+  }
+
+  await expect(page.locator(".trace02-transcript")).toContainText("DOCUMENT TRANSCRIPT");
+  expect((await sessionV2(page)).traces.TRACE_02.assistLevel).toBe(3);
+  await page.locator("#trace02-evidence").fill("NT-02-R02 NT-02-R03 NT-02-R05 NT-02-R07");
+  await page.locator("#trace02-evidence").press("Enter");
+  await page.locator("#trace02-command").fill("RESTORE THE OMITTED RECORD");
+  await page.locator("#trace02-command").press("Enter");
+  await page.getByRole("button", { name: "Issue Trace 02 Receipt" }).click();
+  const receipt = (await sessionV2(page)).receipts.TRACE_02;
+  expect(receipt.assistUsed).toBe(true);
+  expect(receipt.evidenceSummary.assistLevel).toBe(3);
 });
 
 test("apparatus motion, contact lifecycle and live reduced-motion preference", async ({

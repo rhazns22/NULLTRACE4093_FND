@@ -1,6 +1,6 @@
 # NULLTRACE 4093 Chapter Roadmap
 
-This document is a design roadmap. Only Chapter 01 is currently implemented.
+This document is a design roadmap. Chapters 01 and 02 are currently implemented.
 
 The UI must not show `Chapter 1/10` during the early experience. Use language such as:
 
@@ -23,7 +23,7 @@ YOU HAVE SEEN ONLY ONE.
 | Chapter | Implementation | Core technique | Evaluation focus | Narrative discovery | Difficulty | Expected time |
 | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Implemented | Computed CSS | observation | visible value and computed value differ | easy | 15 minutes |
-| 02 | Planned | hidden DOM and HTML comments | source understanding | removed elements preserve records | normal | TBD |
+| 02 | Implemented | hidden DOM and document order | source understanding | removed elements preserve records | normal | 30-150 minutes |
 | 03 | Planned | image metadata and steganography | data inspection | the first previous witness is found | hard | TBD |
 | 04 | Planned | public-domain US fiction book cipher | source checking and coordinate verification | the record was not left by one person | easy | TBD |
 | 05 | Planned | Service Worker and Cache Storage | browser runtime understanding | live screen and cached past screen differ | hard | TBD |
@@ -53,6 +53,29 @@ Not implemented in Chapter 01:
 - server signing
 - backend state comparison
 - public verification page
+
+## Chapter 02 Current Behavior
+
+Implemented:
+
+- route `#/trace/02`
+- Stage 1 receipt gate with local checksum validation
+- `localStorage` v2 migration with `TRACE_01` and `TRACE_02`
+- archive container with 3 displayed records and 7 document records
+- 4 omitted DOM records with stable `data-record-id`, `data-sequence`, and `data-fragment`
+- runtime DOM Comment node inside `#observation-archive`
+- record evidence validation before command submission
+- restored 4-word command validation
+- Trace 02 local receipt with `NT-02-` prefix
+- Stage 1 receipt preserved separately
+- assist levels 1-3 with level 3 document transcript
+
+Not implemented in Chapter 02:
+
+- Chapter 03 route
+- backend verification
+- server-signed receipts
+- Service Worker or IndexedDB persistence
 
 ## Pacing Notes
 

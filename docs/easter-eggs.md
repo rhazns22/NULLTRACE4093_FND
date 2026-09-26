@@ -85,6 +85,51 @@ Discovery condition: inspect the UNVERIFIED dialog root element and read the com
 
 The custom property remains in computed style and is encoded as NT-BIN/8 groups. The participant-facing UI does not name the property.
 
+## Trace 02 Hidden DOM
+
+Spoiler warning: this section documents the implemented Chapter 02 puzzle.
+
+Location:
+
+- [src/components/trace02/ObservationArchive.tsx](../src/components/trace02/ObservationArchive.tsx)
+- [src/domain/trace02/trace02Records.ts](../src/domain/trace02/trace02Records.ts)
+
+Discovery condition: open `#/trace/02` after a valid Trace 01 receipt exists.
+
+The visible archive reports:
+
+- `DISPLAYED ENTRIES // 03`
+- `DOCUMENT ENTRIES // 07`
+
+The actual `#observation-archive` DOM contains seven `article` elements. Three are displayed. Four are hidden from visual rendering and from the accessibility tree:
+
+| Record | Sequence | Fragment |
+| --- | ---: | --- |
+| `NT-02-R02` | 2 | `RESTORE` |
+| `NT-02-R03` | 3 | `THE` |
+| `NT-02-R05` | 5 | `OMITTED` |
+| `NT-02-R07` | 7 | `RECORD` |
+
+Participants must filter `[data-record-state="omitted"]`, sort by `data-sequence`, submit the four record IDs as evidence, then submit the restored command.
+
+Runtime DOM comment:
+
+```text
+NT-TRACE-02
+THE VIEW CONTAINS THREE.
+THE DOCUMENT CONTAINS SEVEN.
+READ THE OMITTED RECORDS IN DOCUMENT SEQUENCE.
+```
+
+The comment is inserted at runtime by effect, not by static `index.html`, and is cleaned up on unmount. The implementation guards against development StrictMode duplicate insertion.
+
+Assist:
+
+- Level 1 points at view vs document.
+- Level 2 points at child count instead of pixels.
+- Level 3 names `#observation-archive`, the omitted selector, and `data-sequence`.
+- Level 3 also reveals a document transcript for accessibility without automatically composing the answer.
+
 ## Privacy Boundaries
 
 The prototype does not detect DevTools, does not collect browser fingerprints, does not block context menus or shortcuts, and does not classify a participant as using automation or AI. Receipt evidence is limited to in-game interaction records.

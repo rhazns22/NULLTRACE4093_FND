@@ -9,6 +9,8 @@ import {
 import { BinaryField } from "./components/BinaryField";
 import { ObservationGlyph } from "./components/ObservationGlyph";
 import { ReceiptCard } from "./components/ReceiptCard";
+import { LocalRecordRecovery } from "./components/LocalRecordRecovery";
+import { Trace02Screen } from "./components/trace02/Trace02Screen";
 import { UnverifiedModal } from "./components/UnverifiedModal";
 import { SMALL_SIGNAL_DELAYS_MS, SMALL_SIGNALS } from "./domain/argSignals";
 import {
@@ -26,7 +28,7 @@ const TICK_INTERVAL_MS = 13 * 1000;
 
 export function App() {
   const route = useHashRoute();
-  const { state, isLoading, actions } = useArgSession();
+  const { state, isLoading, recovery, actions } = useArgSession();
   const [entryCode, setEntryCode] = useState("");
   const [signalCommand, setSignalCommand] = useState("");
   const [glyphClickCount, setGlyphClickCount] = useState(0);
@@ -98,11 +100,24 @@ export function App() {
   }, [state?.currentStage]);
 
   if (isLoading || !state) {
+    if (recovery) {
+      return (
+        <LocalRecordRecovery
+          onStartNewSession={actions.startNewSessionAfterRecovery}
+          recovery={recovery}
+        />
+      );
+    }
+
     return (
       <main className="app-shell app-shell--loading">
         <p>NULLTRACE boot sequence...</p>
       </main>
     );
+  }
+
+  if (route === "trace02") {
+    return <Trace02Screen />;
   }
 
   const canEnterCode = state.currentStage === "INPUT_DISCOVERED";
@@ -203,6 +218,7 @@ export function App() {
         <section className="receipt-view">
           {state.receipt ? (
             <ReceiptCard
+              onOpenNextTrace={() => navigateTo("trace02")}
               onNewSession={actions.resetSession}
               receipt={state.receipt}
             />

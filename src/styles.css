@@ -1115,6 +1115,31 @@ input:disabled {
   color: #61705d;
   overflow-wrap: anywhere;
 }
+.receipt-next-trace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: center;
+  margin-top: 19px;
+  padding: 12px 0;
+  border-top: 1px dashed #8fa08b;
+  border-bottom: 1px dashed #8fa08b;
+  color: #2f3d34;
+  cursor: pointer;
+}
+.receipt-next-trace:hover,
+.receipt-next-trace:focus-visible {
+  color: #101814;
+  outline: 1px solid #506b58;
+  outline-offset: 4px;
+}
+.receipt-next-trace span {
+  font-size: 10px;
+}
+.receipt-next-trace strong {
+  font-size: 11px;
+  font-weight: 500;
+}
 .reveal-observer-item {
   opacity: 0;
   transform: translateY(7px);
@@ -1215,6 +1240,241 @@ input:disabled {
   font-weight: 400;
   font-size: 32px;
 }
+.local-record-recovery {
+  display: grid;
+  place-items: center;
+}
+.local-record-recovery > section {
+  width: min(760px, 100%);
+  padding: 46px 0;
+}
+.local-record-recovery h1 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(34px, 8vw, 72px);
+  font-weight: 300;
+  line-height: 1;
+}
+.local-record-recovery p {
+  color: var(--muted);
+}
+.local-record-recovery dl {
+  display: grid;
+  gap: 1px;
+  margin: 23px 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+.local-record-recovery dl > div {
+  min-width: 0;
+  padding: 13px;
+  background: rgb(4 8 8 / 0.88);
+}
+.local-record-recovery dt {
+  color: var(--muted);
+  font-size: 10px;
+}
+.local-record-recovery dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.local-record-recovery__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.trace02-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+.trace02-shell--locked {
+  display: grid;
+  place-items: center;
+}
+.trace02-locked,
+.trace02-hero,
+.trace02-archive,
+.trace02-verification,
+.trace02-assist,
+.trace02-receipt {
+  width: min(920px, 100%);
+  margin-inline: auto;
+}
+.trace02-locked {
+  padding: 48px 0;
+}
+.trace02-locked h1,
+.trace02-hero h1 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(34px, 8vw, 86px);
+  font-weight: 300;
+  line-height: 1;
+}
+.trace02-locked p,
+.trace02-hero p {
+  color: var(--muted);
+}
+.trace02-archive {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 23px 0;
+}
+.trace02-archive__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 23px;
+  align-items: end;
+}
+.trace02-archive__header h2 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 28px;
+  font-weight: 350;
+}
+.trace02-archive__header dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.trace02-archive__header dd {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 17px;
+}
+.trace02-records {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 23px;
+  margin-top: 23px;
+}
+.trace02-record {
+  min-height: 132px;
+  padding: 17px;
+  border: 1px solid var(--line);
+  background: rgb(5 11 11 / 0.62);
+}
+.trace02-record span,
+.trace02-record small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.trace02-record strong {
+  display: block;
+  margin-top: 13px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.trace02-record p {
+  color: #a9b7b0;
+}
+.trace02-verification {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+  gap: 23px;
+  padding: 23px 0;
+}
+.trace02-verification__heading h2 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 26px;
+  font-weight: 350;
+}
+.trace02-verification form {
+  display: grid;
+  gap: 8px;
+}
+.trace02-verification form + form {
+  margin-top: 13px;
+}
+.trace02-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 7px;
+}
+.trace02-feedback {
+  grid-column: 1 / -1;
+  min-height: 1.5em;
+  color: var(--accent);
+}
+.trace02-assist {
+  color: var(--muted);
+  font-size: 12px;
+}
+.trace02-assist__signals {
+  display: grid;
+  gap: 8px;
+  margin-top: 13px;
+}
+.trace02-assist__signals p {
+  margin: 0;
+  padding: 10px 13px;
+  border-left: 1px solid rgb(136 199 191 / 0.35);
+  background: rgb(95 141 135 / 0.06);
+}
+.trace02-assist__signals span,
+.trace02-assist__signals strong {
+  display: block;
+}
+.trace02-assist__signals span {
+  color: var(--accent);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.trace02-transcript {
+  margin-top: 17px;
+  overflow-x: auto;
+}
+.trace02-transcript table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.trace02-transcript th,
+.trace02-transcript td {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+.trace02-restore-echo {
+  display: flex;
+  gap: 13px;
+  justify-content: center;
+  color: var(--accent);
+  animation: trace02-echo 4093ms ease-out both;
+}
+.trace02-receipt {
+  margin-top: 46px;
+  padding: 32px 38px 26px;
+  color: #242e29;
+  background: #dfe4da;
+  border-top: 3px solid #9bbba5;
+  box-shadow: 0 23px 80px #0004;
+  color-scheme: light;
+}
+.trace02-receipt h2 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(32px, 7vw, 68px);
+  font-weight: 350;
+}
+.trace02-restored-copy {
+  margin: 19px 0;
+}
+.trace02-restored-copy p {
+  margin: 0;
+}
+.trace02-previous-receipt {
+  margin-top: 23px;
+}
+.trace02-previous-receipt pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 @keyframes orbit-spin {
   from {
@@ -1289,6 +1549,16 @@ input:disabled {
     opacity: 0;
   }
 }
+@keyframes trace02-echo {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  15%,
+  72% {
+    opacity: 0.7;
+  }
+}
 
 @media (min-width: 1600px) {
   .app-shell {
@@ -1341,6 +1611,10 @@ input:disabled {
   }
   .apparatus-readout > div {
     padding-inline: 17px;
+  }
+  .trace02-verification,
+  .trace02-archive__header {
+    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 700px) {
@@ -1502,6 +1776,15 @@ input:disabled {
   .receipt-actions > button:last-child {
     margin-left: 0;
   }
+  .trace02-records {
+    grid-template-columns: 1fr;
+  }
+  .trace02-receipt {
+    padding: 23px;
+  }
+  .receipt-next-trace {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 390px) {
   .observation-heading h1 {
@@ -1561,6 +1844,9 @@ input:disabled {
   .reveal-observer-item {
     opacity: 1;
     transform: none;
+  }
+  .trace02-restore-echo {
+    opacity: 0.7;
   }
 }
 @media print {

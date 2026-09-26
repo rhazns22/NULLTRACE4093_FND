@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 
-export type AppRoute = "console" | "receipt";
+export type AppRoute = "console" | "receipt" | "trace02";
 
 const routeByHash: Record<string, AppRoute> = {
   "": "console",
   "#/": "console",
   "#/receipt": "receipt",
+  "#/trace/02": "trace02",
 };
 
 export function useHashRoute(): AppRoute {
@@ -24,7 +25,17 @@ export function useHashRoute(): AppRoute {
 }
 
 export function navigateTo(route: AppRoute): void {
-  window.location.hash = route === "receipt" ? "/receipt" : "/";
+  if (route === "receipt") {
+    window.location.hash = "/receipt";
+    return;
+  }
+
+  if (route === "trace02") {
+    window.location.hash = "/trace/02";
+    return;
+  }
+
+  window.location.hash = "/";
 }
 
 function getRouteFromHash(hash: string): AppRoute {

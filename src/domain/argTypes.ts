@@ -89,6 +89,69 @@ export type StageReceipt = {
   checksum: string;
 };
 
+export type TraceId = "TRACE_01" | "TRACE_02";
+
+export const TRACE_02_STAGES = [
+  "LOCKED",
+  "ENTRY",
+  "DOCUMENT_LOCATED",
+  "OMITTED_RECORDS_FOUND",
+  "ORDER_RESTORED",
+  "VERIFIED",
+  "RECEIPT_ISSUED",
+] as const;
+
+export type Trace02Stage = (typeof TRACE_02_STAGES)[number];
+
+export type Trace02SolvePathEntry = {
+  at: string;
+  stage: Trace02Stage;
+  action: string;
+  detail?: string;
+};
+
+export type Trace02State = {
+  currentStage: Trace02Stage;
+  startedAt: string | null;
+  completedAt: string | null;
+  attempts: number;
+  assistLevel: AssistLevel;
+  discoveredRecordIds: string[];
+  submittedCommand: string | null;
+  solvePath: Trace02SolvePathEntry[];
+  lastError: string | null;
+  restoredAt: string | null;
+};
+
+export type Trace02Receipt = {
+  receiptId: string;
+  sessionId: string;
+  trace: "TRACE_02";
+  stage: "DOCUMENT_RESTORED";
+  status: "VERIFIED";
+  issuedAt: string;
+  elapsedSeconds: number;
+  inputAttempts: number;
+  assistUsed: boolean;
+  evidenceSummary: EvidenceSummary;
+  solvePath: Trace02SolvePathEntry[];
+  checksum: string;
+};
+
+export type ArgSessionStateV2 = {
+  schemaVersion: 2;
+  sessionId: string;
+  currentTrace: TraceId;
+  traces: {
+    TRACE_01: ArgSessionState;
+    TRACE_02: Trace02State;
+  };
+  receipts: Partial<{
+    TRACE_01: StageReceipt;
+    TRACE_02: Trace02Receipt;
+  }>;
+};
+
 export type ArgSessionState = {
   currentStage: ArgStage;
   sessionId: string;
@@ -98,6 +161,19 @@ export type ArgSessionState = {
   entryInteraction: EntryInteractionState;
   solvePath: SolvePathEntry[];
   receipt: StageReceipt | null;
+};
+
+export const INITIAL_TRACE_02_STATE: Trace02State = {
+  currentStage: "LOCKED",
+  startedAt: null,
+  completedAt: null,
+  attempts: 0,
+  assistLevel: 0,
+  discoveredRecordIds: [],
+  submittedCommand: null,
+  solvePath: [],
+  lastError: null,
+  restoredAt: null,
 };
 
 export const INITIAL_INVESTIGATION_FLAGS: InvestigationFlags = {
