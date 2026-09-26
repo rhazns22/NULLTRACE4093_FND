@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, CircleDashed, X } from "lucide-react";
-import { ACCESSIBLE_SIGNAL_GROUPS } from "../domain/argSignals";
-import type { RouteProfile } from "../domain/argTypes";
+import { ASSIST_SIGNALS } from "../domain/argSignals";
+import type { AssistLevel, RouteProfile } from "../domain/argTypes";
 
 type UnverifiedModalProps = {
   assistAvailable: boolean;
+  assistLevel: AssistLevel;
   onAssistUsed: () => void;
   onClose: () => void;
   onSubmitSignal: (value: string) => void;
@@ -13,21 +14,26 @@ type UnverifiedModalProps = {
   signalFeedback?: { id: string; message: string };
 };
 
-const FAST_PATH_COPY = [
-  "앗, 정답을 빨리 맞췄군요.",
-  "하지만 우리가 원하는 문제 풀이가 아닌 것 같아요.",
-  "조금 더 주의 깊게 살펴보세요.",
+const INCOMPLETE_EVIDENCE_COPY = [
+  "ANSWER ACCEPTED.",
+  "EVIDENCE INCOMPLETE.",
+  "A CORRECT RESULT",
+  "IS NOT THE SAME",
+  "AS A VERIFIED RESULT.",
+  "THE INTERFACE REMEMBERS",
+  "WHAT IT DID NOT SHOW.",
+  "STATUS // UNVERIFIED",
 ];
 
 const NORMAL_PATH_COPY = [
-  "숫자는 일치합니다.",
-  "그러나 숫자만으로는 검증할 수 없습니다.",
-  "하지만 우리가 원하는 문제 풀이가 아닌 것 같아요.",
-  "조금 더 주의 깊게 살펴보세요.",
+  "VALUE ACCEPTED.",
+  "OBSERVATION CONFIRMED.",
+  "CONTINUE THE TRACE.",
 ];
 
 export function UnverifiedModal({
   assistAvailable,
+  assistLevel,
   onAssistUsed,
   onClose,
   onSubmitSignal,
@@ -41,8 +47,9 @@ export function UnverifiedModal({
   const [signalInput, setSignalInput] = useState("");
   const [assistExpanded, setAssistExpanded] = useState(false);
   const copy =
-    routeProfile === "NORMAL_PATH" ? NORMAL_PATH_COPY : FAST_PATH_COPY;
+    routeProfile === "NORMAL_PATH" ? NORMAL_PATH_COPY : INCOMPLETE_EVIDENCE_COPY;
   const echoLevel = Math.min(signalInput.trim().length, 13);
+  const visibleAssistSignals = getVisibleAssistSignals(assistLevel);
 
   function updateSignalInput(value: string) {
     const nextValue = value.slice(0, 32);
@@ -219,6 +226,24 @@ export function UnverifiedModal({
             <p key={line}>{line}</p>
           ))}
         </div>
+        <dl className="verification-matrix" aria-label="Verification state">
+          <div>
+            <dt>ANSWER</dt>
+            <dd>ACCEPTED</dd>
+          </div>
+          <div>
+            <dt>EVIDENCE</dt>
+            <dd>{routeProfile === "NORMAL_PATH" ? "PARTIAL" : "INCOMPLETE"}</dd>
+          </div>
+          <div>
+            <dt>OBSERVATION</dt>
+            <dd>{routeProfile === "NORMAL_PATH" ? "CONFIRMED" : "REQUIRED"}</dd>
+          </div>
+          <div>
+            <dt>ROUTE</dt>
+            <dd>{routeProfile === "NORMAL_PATH" ? "UNVERIFIED" : "INCOMPLETE_EVIDENCE"}</dd>
+          </div>
+        </dl>
         <div className="modal-surface" aria-hidden="true" />
         {smallSignals.length > 0 && (
           <aside
@@ -269,16 +294,28 @@ export function UnverifiedModal({
             <button onClick={handleAssistUse} type="button">
               alternate trace
             </button>
-            {assistExpanded && (
-              <p aria-live="polite">
-                {ACCESSIBLE_SIGNAL_GROUPS.map((group) => (
-                  <span key={group}>{group}</span>
-                ))}
+          </div>
+        )}
+        {(assistExpanded || assistLevel > 0) && visibleAssistSignals.length > 0 && (
+          <div className="assist-trace assist-trace--levels" aria-live="polite">
+            {visibleAssistSignals.map(({ level, signal }) => (
+              <p key={level}>
+                <span>assist // {level}</span>
+                <span>{signal}</span>
               </p>
-            )}
+            ))}
           </div>
         )}
       </section>
     </div>
   );
+}
+
+function getVisibleAssistSignals(level: AssistLevel) {
+  return ([1, 2, 3] as const)
+    .filter((signalLevel) => signalLevel <= level)
+    .map((signalLevel) => ({
+      level: signalLevel,
+      signal: ASSIST_SIGNALS[signalLevel],
+    }));
 }

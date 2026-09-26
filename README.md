@@ -1,41 +1,87 @@
 # NULLTRACE 4093 Frontend
 
-NULLTRACE 4093 is a browser-only vertical prototype for a short mystery ARG experience.
-The frontend presents an unidentified observation device, hides clues in interaction records and computed CSS, and issues a local Stage Receipt after the participant completes the first verification path.
+NULLTRACE 4093 is a browser-based ARG prototype about observation, evidence, and verification.
 
-## Project Status
+It is not an AI detector and it does not exclude participants for using tools. The project asks whether a participant can observe a result, doubt it, inspect it, and verify it.
 
-- Prototype scope: Stage 1 vertical slice
-- Runtime: local browser only
-- Server API: not implemented
-- Account system: not implemented
-- Service Worker: not implemented
-- IndexedDB: not implemented
-- Current persistence: `localStorage`
-- Receipt proof label: `LOCAL PROOF`
+The full thesis is revealed gradually through later chapters, not on the first screen:
 
-This project intentionally does not collect browser fingerprints, personal data, DevTools state, AI usage signals, or system-level telemetry. Route classification only uses interactions that happen inside the ARG interface.
+```text
+AI DID NOT LOWER THE STANDARD.
+UNVERIFIED DELEGATION DID.
+
+USE ANY TOOL.
+VERIFY EVERY RESULT.
+
+WE DO NOT MEASURE
+WHAT YOU CAN GENERATE.
+
+WE MEASURE
+WHAT YOU CAN VERIFY.
+```
+
+Live deployments:
+
+- GitHub Pages: https://rhazns22.github.io/NULLTRACE4093_FND/
+- Vercel: https://4093nulltracepage3904.vercel.app/
+
+## Current Implementation
+
+Implemented now:
+
+- Stage 1 vertical slice
+- unidentified first screen
+- circular observation glyph with missing-node structure
+- hidden input channel discovery
+- four-digit entry sequence
+- `UNVERIFIED` dialog
+- computed CSS custom-property clue
+- `VERIFY SIGNAL` command path
+- local Stage Receipt
+- JSON view, download, and clipboard copy
+- new-session confirmation
+- hash-based routing
+- `localStorage` session recovery
+- `NORMAL_PATH` and internal `FAST_PATH` route classification
+- user-facing `FAST_PATH` concept reframed as `INCOMPLETE_EVIDENCE`
+- `assistLevel` and `evidenceSummary` for new receipts
+- reduced-motion support
+- keyboard-only Stage 1 path
+- GitHub Pages and Vercel base-path split
+
+Planned, not implemented:
+
+- Service Worker
+- IndexedDB persistence
+- backend verification API
+- server-signed receipts
+- per-session server seeds
+- public receipt verification page
+- chapters 02-10 as playable routes
+- public leaderboard
+- account system
 
 ## Tech Stack
 
 - Vite
 - React
 - TypeScript
-- CSS modules are not used; styling is centralized in `src/styles.css`
-- No external UI framework
-- Web Crypto API for UUID generation and SHA-256 receipt checksums
+- plain CSS in `src/styles.css` and `src/motion.css`
+- no external UI framework
+- Web Crypto API for UUID generation and SHA-256 local checksums
+- Playwright tests for regression coverage
 - GitHub Actions + GitHub Pages for static deployment
 
 ## Requirements
 
-- Node.js 22 is recommended, matching the GitHub Actions workflow
+- Node.js 22 recommended
 - npm
-- A modern browser with:
+- modern browser support for:
   - `crypto.randomUUID()`
   - `crypto.subtle.digest()`
   - `localStorage`
 
-## Getting Started
+## Commands
 
 Install dependencies:
 
@@ -43,7 +89,7 @@ Install dependencies:
 npm install
 ```
 
-Run the development server:
+Run local development:
 
 ```bash
 npm run dev
@@ -55,16 +101,22 @@ The Vite dev server binds to:
 http://127.0.0.1:5173/
 ```
 
-Create a production build:
+Type-check:
+
+```bash
+npm run typecheck
+```
+
+Production build:
 
 ```bash
 npm run build
 ```
 
-Run TypeScript checks only:
+Vercel-compatible production build:
 
 ```bash
-npm run typecheck
+VERCEL=1 npm run build
 ```
 
 Preview the production build locally:
@@ -73,181 +125,116 @@ Preview the production build locally:
 npm run preview
 ```
 
-## Available Scripts
+Run existing Playwright checks:
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Starts the local Vite development server on `127.0.0.1` |
-| `npm run build` | Runs `tsc --noEmit` and creates the production bundle with Vite |
-| `npm run typecheck` | Runs TypeScript validation without emitting files |
-| `npm run preview` | Serves the built `dist` output locally |
+```bash
+npm run test:e2e
+```
 
 ## Repository Layout
 
 ```text
 .
 ├── .github/workflows/deploy-pages.yml
-├── docs/easter-eggs.md
+├── docs
+│   ├── chapter-roadmap.md
+│   ├── design-system.md
+│   ├── easter-eggs.md
+│   ├── narrative-bible.md
+│   └── puzzle-fairness.md
 ├── index.html
 ├── package.json
-├── vite.config.ts
-├── tsconfig.json
-├── tsconfig.node.json
-└── src
-    ├── App.tsx
-    ├── main.tsx
-    ├── styles.css
-    ├── components
-    │   ├── BinaryField.tsx
-    │   ├── CustomCursor.tsx
-    │   ├── ObservationGlyph.tsx
-    │   ├── ReceiptCard.tsx
-    │   ├── RevealItem.tsx
-    │   ├── StageTimeline.tsx
-    │   └── UnverifiedModal.tsx
-    ├── domain
-    │   ├── argFlow.ts
-    │   ├── argSignals.ts
-    │   ├── argTypes.ts
-    │   ├── binaryClues.ts
-    │   ├── ntBin.ts
-    │   └── receiptFactory.ts
-    ├── hooks
-    │   └── useArgSession.ts
-    ├── router
-    │   └── useHashRoute.ts
-    └── storage
-        ├── argRepository.ts
-        └── localStorageArgRepository.ts
+├── playwright.config.ts
+├── public/favicon.svg
+├── src
+│   ├── App.tsx
+│   ├── components
+│   ├── domain
+│   ├── hooks
+│   ├── router
+│   ├── storage
+│   ├── main.tsx
+│   ├── motion.css
+│   └── styles.css
+└── vite.config.ts
 ```
 
-## User Flow
+## Stage 1 Flow
 
-The Stage 1 prototype follows this intended flow:
+1. The participant enters the unidentified observation screen.
+2. The participant investigates the circular glyph or nearby signals.
+3. The hidden input channel is discovered.
+4. The participant submits `4093`.
+5. The app opens the `UNVERIFIED` dialog.
+6. The participant inspects the dialog's computed style and finds an `NT-BIN/8` signal.
+7. The decoded command is submitted.
+8. The app issues a local Stage Receipt.
 
-1. Participant enters the unidentified first screen.
-2. Participant investigates the circular observation symbol or nearby signals.
-3. Participant discovers the concealed input channel.
-4. Participant submits the four-digit entry sequence.
-5. The `UNVERIFIED` dialog appears.
-6. Participant investigates the dialog and finds a computed CSS custom property signal.
-7. Participant submits the decoded verification command.
-8. The app issues a personal Stage Receipt.
-
-The interface avoids a normal start button. The input channel can be discovered by:
-
-- clicking the observation glyph enough times
-- focusing the glyph and pressing Enter
-- starting numeric keyboard input
-
-Keyboard-only progression is supported.
+The first screen does not show a normal start button. The input channel can be discovered by glyph clicks, keyboard focus plus Enter, or starting numeric input.
 
 ## Stage Model
 
-The stage list is defined in `src/domain/argTypes.ts`.
+Defined in `src/domain/argTypes.ts`:
 
-| Stage | Meaning |
+| Stage | Status |
 | --- | --- |
-| `ENTRY` | Initial observation screen |
-| `INPUT_DISCOVERED` | Concealed input channel has been exposed |
-| `UNVERIFIED` | Entry code was accepted, but the route is not fully verified |
-| `STYLE_CLUE_FOUND` | Computed style clue was solved |
-| `VERIFIED` | Stage verification is complete and ready to issue receipt |
-| `RECEIPT_ISSUED` | Stage Receipt has been generated and persisted |
+| `ENTRY` | Implemented |
+| `INPUT_DISCOVERED` | Implemented |
+| `UNVERIFIED` | Implemented |
+| `STYLE_CLUE_FOUND` | Implemented as an internal transition record |
+| `VERIFIED` | Implemented |
+| `RECEIPT_ISSUED` | Implemented |
+
+Future chapters are documented in `docs/chapter-roadmap.md` only. They are not implemented as routes or fake UI.
 
 ## Session State
 
-The primary session state shape is `ArgSessionState`.
-
-Important fields:
-
-- `currentStage`: current ARG stage
-- `sessionId`: anonymous browser session UUID
-- `startedAt`: ISO timestamp for session start
-- `inputAttempts`: count of submitted entry attempts
-- `investigationFlags`: game interaction flags
-- `entryInteraction`: input discovery, dialog, route, and assist metadata
-- `solvePath`: chronological list of stage actions
-- `receipt`: generated Stage Receipt, or `null`
-
-The anonymous session ID is created with `crypto.randomUUID()` and stored in `localStorage`.
-
-Storage keys:
+The app stores an anonymous local session using:
 
 - `nulltrace-4093.session-id.v1`
 - `nulltrace-4093.arg-state.v1`
 
+Important `ArgSessionState` fields:
+
+- `currentStage`
+- `sessionId`
+- `startedAt`
+- `inputAttempts`
+- `investigationFlags`
+- `entryInteraction`
+- `solvePath`
+- `receipt`
+
+`entryInteraction` includes:
+
+- `inputDiscoveryMethod`
+- `routeProfile`
+- `unverifiedDialogViewed`
+- `styleSignalSubmittedAt`
+- `assistUsed`
+- `assistLevel`
+- `attempts`
+
+Stored v1 sessions are normalized on load with safe default values for newly added fields. Existing receipts are not rewritten automatically.
+
 ## Route Profiles
 
-The app currently distinguishes two route profiles after the entry sequence is accepted:
+Internal route profile values remain compatible with existing localStorage:
 
-| Profile | Description |
+| Internal value | User-facing meaning |
 | --- | --- |
-| `NORMAL_PATH` | Participant investigated the observation device or nearby signals, used a normal discovery interaction, and stayed on the entry screen long enough |
-| `FAST_PATH` | Participant submitted the entry sequence without enough in-interface investigation history |
+| `NORMAL_PATH` | Observation was confirmed before the accepted value |
+| `FAST_PATH` | `INCOMPLETE_EVIDENCE` |
 
-`FAST_PATH` is not blocked. It changes the `UNVERIFIED` copy and is recorded in the receipt path. The app does not claim that the participant used DevTools, automation, AI, or any external tool.
+`FAST_PATH` is not a cheating claim. It only means the local game state does not contain enough in-interface evidence before the accepted value.
 
-## Interaction and Motion Design
-
-The first screen is designed to feel like an unidentified observation device rather than a conventional UI.
-
-Core visual rules:
-
-- near-black background
-- low-contrast teal and off-white
-- restrained motion, no heavy neon styling
-- large negative space
-- central circular symbol
-- faint binary field managed as structured data
-- no fake terminal panels
-- no system-error-like warnings
-
-The circular symbol uses prime-number structure:
-
-- outer orbit: 17 nodes
-- middle orbit: 13 nodes
-- inner orbit: 7 nodes
-- one node intentionally missing per orbit
-- orbit cycle: 4093ms
-
-`prefers-reduced-motion` is supported. When reduced motion is enabled, rotation stops and static clue affordances remain available.
-
-## Hidden Signals
-
-All hidden clue strings are managed in `NT-BIN/8` format where practical.
-
-Relevant files:
-
-- `src/domain/argSignals.ts`: computed-style signal, console signal, small signals
-- `src/domain/binaryClues.ts`: faint background binary clues
-- `src/domain/ntBin.ts`: NT-BIN/8 decoding helpers
-- `docs/easter-eggs.md`: development-only notes about hidden interactions and discovery conditions
-
-The computed-style clue is exposed through a CSS custom property on the `UNVERIFIED` dialog root. It must remain present in actual computed style, not only in source text.
-
-## Accessibility
-
-Implemented accessibility considerations:
-
-- keyboard-only input discovery path
-- focusable observation glyph
-- visible focus treatment
-- `UNVERIFIED` dialog uses dialog semantics
-- dialog title and description are connected for screen readers
-- Escape can close the dialog
-- focus trap is applied while the dialog is open
-- outside click does not force-close the dialog
-- reduced-motion media query support
-- delayed assistive hints for participants who cannot use DevTools comfortably
-
-Assistive hint usage is recorded as `assistUsed: true` in the Stage Receipt.
+The app does not detect AI use, DevTools use, automation, external answer lookup, other tabs, keyboard shortcuts, browser extensions, IP address, or system identity.
 
 ## Stage Receipt
 
-Receipt generation is implemented in `src/domain/receiptFactory.ts`.
+Receipt generation lives in `src/domain/receiptFactory.ts`.
 
-Receipt fields:
+Current receipt fields:
 
 - `receiptId`
 - `sessionId`
@@ -259,53 +246,69 @@ Receipt fields:
 - `solvePath`
 - `assistUsed`
 - `evidence`
+- `evidenceSummary`
 - `checksum`
 
-Receipt IDs use the `NT-01-` prefix and a browser-generated UUID.
+`evidenceSummary` is present on newly issued receipts and contains:
 
-The checksum is generated by:
+- `observationCount`
+- `validationsCompleted`
+- `assistLevel`
+- `blindAttemptCount`
+- `evidenceIds`
 
-1. removing the `checksum` field from the receipt payload
-2. stable-stringifying the remaining payload with sorted object keys
-3. hashing the stable string with Web Crypto API SHA-256
+The checksum is generated by stable-stringifying the receipt payload without `checksum` and hashing it with SHA-256 through the Web Crypto API.
 
-The checksum is a local integrity marker only. It is not a server signature and must not be described as cryptographic identity verification.
-
-Receipt UI features:
-
-- printable ticket-style record
-- JSON view
-- JSON download
-- clipboard copy
-- persisted receipt recovery after reconnect
-- new-session flow with confirmation
+This is a `LOCAL PROOF`. It is not a server signature, identity proof, anti-cheat proof, or tamper-proof certificate.
 
 ## Persistence Layer
 
-Persistence is intentionally separated behind `ArgRepository`.
+Persistence is separated behind `ArgRepository`:
 
-Current implementation:
+- `src/storage/argRepository.ts`
+- `src/storage/localStorageArgRepository.ts`
 
-- `src/storage/argRepository.ts`: storage interface
-- `src/storage/localStorageArgRepository.ts`: `localStorage` implementation
-
-This keeps the app ready for future persistence upgrades.
-
-Future IndexedDB integration should replace or extend `LocalStorageArgRepository` while preserving the `ArgRepository` interface.
+Future IndexedDB support should implement the same repository interface instead of changing game logic directly.
 
 ## Routing
 
-Routing is intentionally minimal and hash-based.
+Routing is hash-based through `src/router/useHashRoute.ts`.
 
-Relevant file:
+This is intentional for static hosting and GitHub Pages compatibility. Do not switch to `BrowserRouter` unless the deployment strategy is changed.
 
-- `src/router/useHashRoute.ts`
+## Hidden Signals
 
-This keeps the static GitHub Pages deployment simple and avoids server-side fallback requirements.
+All hidden clue strings are managed in `NT-BIN/8` format where practical.
+
+Relevant files:
+
+- `src/domain/argSignals.ts`
+- `src/domain/binaryClues.ts`
+- `src/domain/ntBin.ts`
+- `docs/easter-eggs.md`
+
+The computed-style clue is exposed through a CSS custom property on the `UNVERIFIED` dialog root. It must remain present in actual computed style, not only in source text.
+
+## Accessibility
+
+Implemented accessibility considerations:
+
+- keyboard-only input discovery path
+- focusable observation glyph
+- visible focus treatment
+- `UNVERIFIED` dialog semantics
+- connected dialog title and description
+- Escape dialog close
+- focus trap while the dialog is open
+- outside click does not force-close the dialog
+- reduced-motion media query support
+- staged SMALL SIGNAL assist levels
+
+Hint usage is recorded as evidence. It is not a failure condition.
 
 ## Deployment
 
-GitHub Pages deployment is defined in:
+GitHub Pages deployment is handled by:
 
 ```text
 .github/workflows/deploy-pages.yml
@@ -320,75 +323,65 @@ Workflow behavior:
 5. Uploads `dist` as a Pages artifact
 6. Deploys through `actions/deploy-pages@v4`
 
-The Vite production base path is configured for GitHub Pages:
+`vite.config.ts` keeps deployment bases separate:
 
-```ts
-base: process.env.NODE_ENV === "production" ? "/NULLTRACE4093_FND/" : "/"
-```
+- development: `/`
+- Vercel with `VERCEL=1`: `/`
+- GitHub Pages production: `/NULLTRACE4093_FND/`
 
-Deployed URL:
+No `vercel.json` is required for the current static frontend.
 
-```text
-https://rhazns22.github.io/NULLTRACE4093_FND/
-```
+## Privacy Policy For This Prototype
 
-## Security and Privacy Notes
+The frontend intentionally avoids:
 
-This frontend does not implement authentication or trusted verification.
-
-Do not treat the local Stage Receipt as:
-
-- identity proof
-- anti-cheat proof
-- server-backed verification
-- tamper-proof certification
-
-The prototype intentionally avoids:
-
-- collecting personal information
+- personal data collection
 - browser fingerprinting
 - DevTools-open detection
+- AI-use detection
+- extension detection
+- IP collection
+- account identity
+- clipboard monitoring
 - right-click blocking
 - keyboard shortcut blocking
-- AI-use detection
-- server calls
+- system information collection
 
-## Future Extension Points
+Evidence is limited to game interactions that happen inside the ARG interface.
 
-Recommended expansion points:
+## Design Direction
 
-- Service Worker: add offline shell caching and asset preloading around the Vite build output
-- IndexedDB: implement a new repository using `ArgRepository`
-- Server receipt signing: replace local checksum-only proof with a backend signing flow
-- Multi-stage ARG: expand `ARG_STAGES`, `StageReceipt.stage`, and route handling
-- Backend audit endpoint: submit non-personal game evidence only after explicit design review
-- Asset pipeline: add generated or curated visual/audio assets without changing the state model
+NULLTRACE should feel like an observation apparatus, not a hacker terminal.
 
-## Development Checklist
+Keep:
 
-Before deploying changes:
+- near-black background
+- low-saturation teal and off-white
+- large negative space
+- circular observation symbol
+- missing values
+- restrained motion
+- state mismatch
+- diff, evidence, and receipt language
 
-```bash
-npm run typecheck
-npm run build
-```
+Avoid:
 
-Recommended manual checks:
+- fake system errors
+- random binary noise with no role
+- neon terminal cliches
+- direct Cicada-style imitation
+- claims that the participant is selected, superior, or detected
 
-- first-screen layout at mobile width around 360px
-- first-screen layout at 1366x768 and 1920x1080
-- keyboard-only discovery and submission
-- reduced-motion behavior
-- `UNVERIFIED` dialog focus trap and Escape handling
-- computed CSS custom property presence via `getComputedStyle()`
-- receipt JSON download
-- receipt copy to clipboard
-- session recovery after refresh
-- new-session reset flow
+## Roadmap Documents
+
+- `docs/narrative-bible.md`
+- `docs/chapter-roadmap.md`
+- `docs/puzzle-fairness.md`
+- `docs/easter-eggs.md`
+
+These documents distinguish current implementation from long-term design plans.
 
 ## Backend Repository
-
-Backend work is intentionally separate from this frontend.
 
 Frontend repository:
 
@@ -402,4 +395,4 @@ Backend repository:
 rhazns22/NULLTRACE4093_BND
 ```
 
-At the current prototype stage, the frontend does not call the backend.
+The current frontend does not call the backend.

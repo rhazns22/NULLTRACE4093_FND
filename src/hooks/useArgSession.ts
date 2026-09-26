@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ENTRY_CODE, STYLE_CLUE, type ArgSessionState, type InputDiscoveryMethod } from "../domain/argTypes";
+import {
+  ENTRY_CODE,
+  STYLE_CLUE,
+  type ArgSessionState,
+  type AssistLevel,
+  type InputDiscoveryMethod,
+} from "../domain/argTypes";
 import {
   classifyRouteProfile,
   createInitialSession,
@@ -17,7 +23,7 @@ type ArgSessionActions = {
   closeUnverifiedDialog: () => void;
   openUnverifiedDialog: () => void;
   submitStyleClue: (value: string) => void;
-  markAssistUsed: () => void;
+  markAssistUsed: (level?: AssistLevel) => void;
   commitVerificationPath: () => void;
   issueReceipt: () => Promise<void>;
   resetSession: () => Promise<void>;
@@ -300,9 +306,16 @@ export function useArgSession(): ArgSessionModel {
         });
       },
 
-      markAssistUsed() {
+      markAssistUsed(level = 1) {
         setState((current) => {
-          if (!current || current.entryInteraction.assistUsed) {
+          if (!current) {
+            return current;
+          }
+
+          const currentLevel = current.entryInteraction.assistLevel ?? (current.entryInteraction.assistUsed ? 1 : 0);
+          const nextLevel = Math.max(currentLevel, level) as AssistLevel;
+
+          if (currentLevel === nextLevel && current.entryInteraction.assistUsed) {
             return current;
           }
 
@@ -311,10 +324,12 @@ export function useArgSession(): ArgSessionModel {
             {
               entryInteraction: {
                 assistUsed: true,
+                assistLevel: nextLevel,
                 assistUsedAt: new Date().toISOString(),
               },
             },
             "assistive hint consulted",
+            `level ${nextLevel}`,
           );
         });
       },

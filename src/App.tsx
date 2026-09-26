@@ -15,6 +15,8 @@ import {
   ARG_STAGES,
   type ArgSessionState,
   type ArgStage,
+  type AssistLevel,
+  type RouteProfile,
 } from "./domain/argTypes";
 import { useArgSession } from "./hooks/useArgSession";
 import { navigateTo, useHashRoute } from "./router/useHashRoute";
@@ -114,7 +116,9 @@ export function App() {
   const shouldShowReceipt =
     route === "receipt" || state.currentStage === "RECEIPT_ISSUED";
   const smallSignals = getSmallSignals(state, nowMs);
-  const assistAvailable = isTotalAssistAvailable(state, nowMs);
+  const availableAssistLevel = getAvailableAssistLevel(state, nowMs);
+  const currentAssistLevel = state.entryInteraction.assistLevel ?? (state.entryInteraction.assistUsed ? 1 : 0);
+  const assistAvailable = currentAssistLevel < availableAssistLevel;
   const stageOrdinal = ARG_STAGES.indexOf(state.currentStage) + 1;
   const lastEvent = state.solvePath[state.solvePath.length - 1];
   const signalFeedback =
@@ -302,7 +306,7 @@ export function App() {
             <div className="readout-route">
               <span className="readout-label">TRACE</span>
               <span className="readout-value">
-                {state.entryInteraction.routeProfile}
+                {formatRouteProfile(state.entryInteraction.routeProfile)}
               </span>
             </div>
           </div>
@@ -430,7 +434,11 @@ export function App() {
         state.entryInteraction.unverifiedDialogOpen && (
           <UnverifiedModal
             assistAvailable={assistAvailable}
-            onAssistUsed={actions.markAssistUsed}
+            assistLevel={currentAssistLevel}
+            onAssistUsed={() => {
+              const nextLevel = Math.min(currentAssistLevel + 1, availableAssistLevel) as AssistLevel;
+              actions.markAssistUsed(nextLevel);
+            }}
             onClose={actions.closeUnverifiedDialog}
             onSubmitSignal={actions.submitStyleClue}
             routeProfile={state.entryInteraction.routeProfile}
@@ -474,18 +482,59 @@ function getSmallSignals(state: ArgSessionState, nowMs: number): string[] {
   return signals;
 }
 
-function isTotalAssistAvailable(
+function getAvailableAssistLevel(
   state: ArgSessionState,
   nowMs: number,
-): boolean {
+): AssistLevel {
   if (state.currentStage !== "UNVERIFIED") {
-    return false;
+    return 0;
   }
 
-  return (
-    nowMs - new Date(state.startedAt).getTime() >=
-    SMALL_SIGNAL_DELAYS_MS.totalAssist
-  );
+  const startedMs = new Date(state.startedAt).getTime();
+  const lastSubmittedAt = state.entryInteraction.lastSubmittedAt;
+  const postCodeElapsedMs = lastSubmittedAt
+    ? nowMs - new Date(lastSubmittedAt).getTime()
+    : 0;
+  const totalElapsedMs = nowMs - startedMs;
+  const rejectedStyleClues = state.solvePath.filter(
+    (entry) => entry.action === "computed style clue rejected",
+  ).length;
+  const repeatedEntryAttempts = state.inputAttempts > 1;
+  const dialogWasHandled =
+    state.entryInteraction.unverifiedDialogViewed &&
+    !!state.entryInteraction.unverifiedDialogDismissedAt;
+
+  if (
+    totalElapsedMs >= SMALL_SIGNAL_DELAYS_MS.totalAssist ||
+    rejectedStyleClues >= 2
+  ) {
+    return 3;
+  }
+
+  if (
+    rejectedStyleClues >= 1 ||
+    (dialogWasHandled && postCodeElapsedMs >= SMALL_SIGNAL_DELAYS_MS.unverified)
+  ) {
+    return 2;
+  }
+
+  if (
+    repeatedEntryAttempts ||
+    dialogWasHandled ||
+    postCodeElapsedMs >= SMALL_SIGNAL_DELAYS_MS.postCode
+  ) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function formatRouteProfile(profile: RouteProfile): string {
+  if (profile === "FAST_PATH") {
+    return "INCOMPLETE_EVIDENCE";
+  }
+
+  return profile;
 }
 
 function updateDocumentSignal(stage: ArgStage) {

@@ -1,4 +1,4 @@
-import type { ArgSessionState, StageReceipt } from "./argTypes";
+import type { ArgSessionState, EvidenceSummary, StageReceipt } from "./argTypes";
 
 type ReceiptPayload = Omit<StageReceipt, "checksum">;
 
@@ -12,13 +12,14 @@ export async function createStageReceipt(state: ArgSessionState, now = new Date(
     elapsedSeconds: getElapsedSeconds(state.startedAt, now),
     inputAttempts: state.inputAttempts,
     solvePath: state.solvePath,
-    assistUsed: state.entryInteraction.assistUsed,
+    assistUsed: getAssistLevel(state) > 0,
     evidence: {
       glyphInvestigated: state.investigationFlags.glyphInvestigated,
       inputDiscoveryMethod: state.entryInteraction.inputDiscoveryMethod,
       unverifiedDialogViewed: state.entryInteraction.unverifiedDialogViewed,
       cssClueSolved: state.investigationFlags.cssComputedClueFound,
     },
+    evidenceSummary: createEvidenceSummary(state),
   };
   const checksum = await sha256(stableStringify(payload));
 
@@ -26,6 +27,54 @@ export async function createStageReceipt(state: ArgSessionState, now = new Date(
     ...payload,
     checksum,
   };
+}
+
+function createEvidenceSummary(state: ArgSessionState): EvidenceSummary {
+  const evidenceIds: string[] = [];
+
+  if (state.investigationFlags.glyphInvestigated) {
+    evidenceIds.push("OBSERVATION_GLYPH");
+  }
+
+  if (state.entryInteraction.inputDiscoveryMethod) {
+    evidenceIds.push("INPUT_CHANNEL_DISCOVERED");
+  }
+
+  if (state.entryInteraction.unverifiedDialogViewed) {
+    evidenceIds.push("UNVERIFIED_DIALOG");
+  }
+
+  if (state.investigationFlags.cssComputedClueFound) {
+    evidenceIds.push("COMPUTED_STYLE_SIGNAL");
+  }
+
+  const assistLevel = getAssistLevel(state);
+
+  if (assistLevel > 0) {
+    evidenceIds.push(`SMALL_SIGNAL_LEVEL_${assistLevel}`);
+  }
+
+  return {
+    observationCount: evidenceIds.length,
+    validationsCompleted: [
+      state.entryInteraction.attempts.some((attempt) => attempt.accepted),
+      state.investigationFlags.cssComputedClueFound,
+    ].filter(Boolean).length,
+    assistLevel,
+    blindAttemptCount: getBlindAttemptCount(state),
+    evidenceIds,
+  };
+}
+
+function getAssistLevel(state: ArgSessionState): EvidenceSummary["assistLevel"] {
+  return state.entryInteraction.assistLevel ?? (state.entryInteraction.assistUsed ? 1 : 0);
+}
+
+function getBlindAttemptCount(state: ArgSessionState): number {
+  const unresolvedAttempts = state.entryInteraction.attempts.filter((attempt) => !attempt.accepted).length;
+  const incompleteEvidenceEntry = state.entryInteraction.routeProfile === "FAST_PATH" ? 1 : 0;
+
+  return unresolvedAttempts + incompleteEvidenceEntry;
 }
 
 export function stableStringify(value: unknown): string {

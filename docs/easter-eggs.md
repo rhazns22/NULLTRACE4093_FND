@@ -51,16 +51,31 @@ Location: [src/hooks/useArgSession.ts](../src/hooks/useArgSession.ts)
 
 Discovery condition: submit an incorrect four-digit code. When the total wrong/accepted attempt counter lands on a prime number, rejection text uses a prime-specific variant. It does not say whether the submitted value is close or correct.
 
-## Small Signal
+## Small Signal And Assist Levels
 
 Location: [src/domain/argSignals.ts](../src/domain/argSignals.ts), rendered by [src/App.tsx](../src/App.tsx) and [src/components/UnverifiedModal.tsx](../src/components/UnverifiedModal.tsx)
 
-All small-signal strings are stored as NT-BIN/8 and decoded at render time.
+All small-signal and assist strings are stored as NT-BIN/8 and decoded at render time.
 
 - Entry screen after 5 minutes: indirect hint toward omitted points in the circular glyph.
 - After accepted `4093`, 4 minutes in `UNVERIFIED`: hint toward verification state rather than result.
 - After accepted `4093`, 5 minutes in `UNVERIFIED`: hint toward visible style vs computed style.
-- Total session time after 12 minutes in `UNVERIFIED`: modal exposes the accessibility alternate trace as NT-BIN/8 groups. Pressing it records `assistUsed: true` for receipt generation.
+- The modal can expose `alternate trace` when Stage 1 activity indicates the participant may need assistance.
+- Pressing `alternate trace` increases `assistLevel` up to 3 and records `assistUsed: true` for receipt generation.
+
+Assist levels:
+
+- Level 1: observation direction.
+- Level 2: concept or location.
+- Level 3: tool or procedure.
+
+The assist path does not assert cheating and does not mark failure.
+
+## Route Language
+
+The internal route profile remains `FAST_PATH` for localStorage compatibility.
+
+Participant-facing copy should treat it as `INCOMPLETE_EVIDENCE`, not as speed, AI use, DevTools use, or automation detection.
 
 ## CSS Computed Style Clue
 

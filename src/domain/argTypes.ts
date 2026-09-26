@@ -14,6 +14,7 @@ export type ArgStage = (typeof ARG_STAGES)[number];
 
 export type InputDiscoveryMethod = "glyph_click" | "glyph_keyboard_enter" | "numeric_key";
 export type RouteProfile = "UNDETERMINED" | "NORMAL_PATH" | "FAST_PATH";
+export type AssistLevel = 0 | 1 | 2 | 3;
 
 export type InvestigationFlags = {
   entrySignalReviewed: boolean;
@@ -46,6 +47,7 @@ export type EntryInteractionState = {
   unverifiedDialogDismissedAt: string | null;
   styleSignalSubmittedAt: string | null;
   assistUsed: boolean;
+  assistLevel: AssistLevel;
   assistUsedAt: string | null;
   attempts: InputAttemptRecord[];
 };
@@ -64,6 +66,14 @@ export type ReceiptEvidence = {
   cssClueSolved: boolean;
 };
 
+export type EvidenceSummary = {
+  observationCount: number;
+  validationsCompleted: number;
+  assistLevel: AssistLevel;
+  blindAttemptCount: number;
+  evidenceIds: string[];
+};
+
 export type StageReceipt = {
   receiptId: string;
   sessionId: string;
@@ -75,6 +85,7 @@ export type StageReceipt = {
   solvePath: SolvePathEntry[];
   assistUsed: boolean;
   evidence: ReceiptEvidence;
+  evidenceSummary?: EvidenceSummary;
   checksum: string;
 };
 
@@ -111,6 +122,7 @@ export const INITIAL_ENTRY_INTERACTION: EntryInteractionState = {
   unverifiedDialogDismissedAt: null,
   styleSignalSubmittedAt: null,
   assistUsed: false,
+  assistLevel: 0,
   assistUsedAt: null,
   attempts: [],
 };

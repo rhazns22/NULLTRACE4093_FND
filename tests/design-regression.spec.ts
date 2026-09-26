@@ -94,7 +94,7 @@ test("normal investigation retains puzzle, receipt checksum, JSON and session re
   await page.locator("#entry-code").fill("4093");
   await page.locator("#entry-code").press("Enter");
   await expect(
-    page.getByText("숫자는 일치합니다.", { exact: true }),
+    page.getByText("VALUE ACCEPTED.", { exact: true }),
   ).toBeVisible();
   expect((await session(page)).entryInteraction.routeProfile).toBe(
     "NORMAL_PATH",
@@ -203,7 +203,7 @@ test("fast route, focus trap, retained dialog and surface command", async ({
   await fastEntry(page);
   expect((await session(page)).entryInteraction.routeProfile).toBe("FAST_PATH");
   await expect(
-    page.getByText("앗, 정답을 빨리 맞췄군요.", { exact: true }),
+    page.getByText("EVIDENCE INCOMPLETE.", { exact: true }),
   ).toBeVisible();
   await expect(page.locator(".modal-close")).toBeFocused();
   await page.keyboard.press("Shift+Tab");
@@ -272,8 +272,11 @@ test("keyboard-only reduced motion and timed assist", async ({ page }) => {
     page.getByRole("button", { name: "alternate trace" }),
   ).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".assist-trace p")).toContainText("NT-BIN/8");
+  await expect(page.locator(".assist-trace--levels p")).toContainText(
+    "COMPUTED",
+  );
   expect((await session(page)).entryInteraction.assistUsed).toBe(true);
+  expect((await session(page)).entryInteraction.assistLevel).toBe(1);
   const command = await computedCommand(page);
   await page.keyboard.type(command);
   await page.keyboard.press("Enter");
@@ -371,6 +374,84 @@ test("separate sessions issue different local proofs", async ({ browser }) => {
   expect(receipts[0].sessionId).not.toBe(receipts[1].sessionId);
   expect(receipts[0].receiptId).not.toBe(receipts[1].receiptId);
   expect(receipts[0].checksum).not.toBe(receipts[1].checksum);
+});
+
+test("legacy v1 receipt without evidence summary restores without empty UI", async ({
+  page,
+}) => {
+  const legacySession = "11111111-1111-4111-8111-111111111111";
+  const issuedAt = "2026-01-01T00:00:00.000Z";
+
+  await page.addInitScript(
+    ({ stateKey, legacySession, issuedAt }) => {
+      localStorage.setItem("nulltrace-4093.session-id.v1", legacySession);
+      localStorage.setItem(
+        stateKey,
+        JSON.stringify({
+          currentStage: "RECEIPT_ISSUED",
+          sessionId: legacySession,
+          startedAt: issuedAt,
+          inputAttempts: 1,
+          investigationFlags: {
+            entrySignalReviewed: true,
+            glyphInvestigated: true,
+            inputCipherFound: true,
+            cssComputedClueFound: true,
+            verificationPathCommitted: true,
+          },
+          entryInteraction: {
+            inputDiscoveryMethod: "glyph_click",
+            routeProfile: "NORMAL_PATH",
+            assistUsed: false,
+            attempts: [],
+          },
+          solvePath: [
+            {
+              at: issuedAt,
+              stage: "ENTRY",
+              action: "anonymous session opened",
+            },
+          ],
+          receipt: {
+            receiptId: "NT-01-22222222-2222-4222-8222-222222222222",
+            sessionId: legacySession,
+            stage: 1,
+            status: "VERIFIED",
+            issuedAt,
+            elapsedSeconds: 12.345,
+            inputAttempts: 1,
+            solvePath: [
+              {
+                at: issuedAt,
+                stage: "ENTRY",
+                action: "anonymous session opened",
+              },
+            ],
+            assistUsed: false,
+            evidence: {
+              glyphInvestigated: true,
+              inputDiscoveryMethod: "glyph_click",
+              unverifiedDialogViewed: true,
+              cssClueSolved: true,
+            },
+            checksum: "0".repeat(64),
+          },
+        }),
+      );
+    },
+    { stateKey, legacySession, issuedAt },
+  );
+
+  await page.goto("/");
+  await expect(page.locator(".receipt-card")).toBeVisible();
+  await expect(page.locator(".receipt-identifier")).toContainText(
+    "NT-01-22222222-2222-4222-8222-222222222222",
+  );
+  await expect(page.locator(".receipt-card")).not.toContainText("undefined");
+  await expect(page.locator(".receipt-card")).not.toContainText("NaN");
+  await expect(page.locator(".receipt-card")).toContainText("Assist Level");
+  expect((await session(page)).entryInteraction.assistLevel).toBe(0);
+  expect((await session(page)).receipt.evidenceSummary).toBeUndefined();
 });
 
 test("apparatus motion, contact lifecycle and live reduced-motion preference", async ({

@@ -40,6 +40,7 @@ export function ReceiptCard({ onNewSession, receipt }: ReceiptCardProps) {
     setConfirmNewSession(false);
     newSessionRef.current?.focus();
   }
+  const evidenceSummary = getReceiptEvidenceSummary(receipt);
   const receiptJson = useMemo(
     () => JSON.stringify(receipt, null, 2),
     [receipt],
@@ -134,9 +135,19 @@ export function ReceiptCard({ onNewSession, receipt }: ReceiptCardProps) {
           <dd>{receipt.assistUsed ? "yes" : "no"}</dd>
         </div>
         <div className="hv-tilt-card">
+          <dt>Assist Level</dt>
+          <dd>{evidenceSummary?.assistLevel ?? (receipt.assistUsed ? 1 : 0)}</dd>
+        </div>
+        <div className="hv-tilt-card">
           <dt>Evidence</dt>
           <dd>{formatEvidence(receipt)}</dd>
         </div>
+        {evidenceSummary && (
+          <div className="receipt-grid__wide hv-tilt-card">
+            <dt>Evidence Summary</dt>
+            <dd>{formatEvidenceSummary(evidenceSummary)}</dd>
+          </div>
+        )}
         <div className="receipt-grid__wide hv-tilt-card">
           <dt>Checksum</dt>
           <dd>{receipt.checksum}</dd>
@@ -280,7 +291,12 @@ function formatDate(value: string): string {
 }
 
 function formatEvidence(receipt: StageReceipt): string {
-  const evidence = receipt.evidence;
+  const evidence = receipt.evidence ?? {
+    glyphInvestigated: false,
+    inputDiscoveryMethod: null,
+    unverifiedDialogViewed: false,
+    cssClueSolved: false,
+  };
 
   return [
     `glyph:${evidence.glyphInvestigated ? "yes" : "no"}`,
@@ -288,4 +304,36 @@ function formatEvidence(receipt: StageReceipt): string {
     `dialog:${evidence.unverifiedDialogViewed ? "yes" : "no"}`,
     `css:${evidence.cssClueSolved ? "yes" : "no"}`,
   ].join(" / ");
+}
+
+function formatEvidenceSummary(summary: NonNullable<StageReceipt["evidenceSummary"]>): string {
+  return [
+    `observations:${summary.observationCount}`,
+    `validations:${summary.validationsCompleted}`,
+    `assist:${summary.assistLevel}`,
+    `blind:${summary.blindAttemptCount}`,
+    `ids:${summary.evidenceIds.join(",") || "none"}`,
+  ].join(" / ");
+}
+
+function getReceiptEvidenceSummary(receipt: StageReceipt): StageReceipt["evidenceSummary"] {
+  if (!receipt.evidenceSummary) {
+    return undefined;
+  }
+
+  return {
+    observationCount: Number.isFinite(receipt.evidenceSummary.observationCount)
+      ? receipt.evidenceSummary.observationCount
+      : 0,
+    validationsCompleted: Number.isFinite(receipt.evidenceSummary.validationsCompleted)
+      ? receipt.evidenceSummary.validationsCompleted
+      : 0,
+    assistLevel: receipt.evidenceSummary.assistLevel ?? (receipt.assistUsed ? 1 : 0),
+    blindAttemptCount: Number.isFinite(receipt.evidenceSummary.blindAttemptCount)
+      ? receipt.evidenceSummary.blindAttemptCount
+      : 0,
+    evidenceIds: Array.isArray(receipt.evidenceSummary.evidenceIds)
+      ? receipt.evidenceSummary.evidenceIds
+      : [],
+  };
 }
