@@ -39,6 +39,8 @@ export function stableStringify(value: unknown): string {
 
   const record = value as Record<string, unknown>;
   const entries = Object.keys(record)
+    // Match JSON persistence, which omits optional fields with undefined values.
+    .filter((key) => record[key] !== undefined)
     .sort()
     .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`);
 

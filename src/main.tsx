@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { CONSOLE_SIGNAL } from "./domain/argSignals";
 import "./styles.css";
+import "./motion.css";
 
 const CONSOLE_SIGNAL_KEY = "nulltrace-4093.console-signal.v1";
 

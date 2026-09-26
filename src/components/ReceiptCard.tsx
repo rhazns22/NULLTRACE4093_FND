@@ -1,4 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowUpRight,
+  Check,
+  Copy,
+  Download,
+  FileJson,
+  Plus,
+  Printer,
+  ShieldCheck,
+} from "lucide-react";
 import type { StageReceipt } from "../domain/argTypes";
 import { RevealItem } from "./RevealItem";
 
@@ -9,9 +19,31 @@ type ReceiptCardProps = {
 
 export function ReceiptCard({ onNewSession, receipt }: ReceiptCardProps) {
   const [jsonVisible, setJsonVisible] = useState(false);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
+    "idle",
+  );
   const [confirmNewSession, setConfirmNewSession] = useState(false);
-  const receiptJson = useMemo(() => JSON.stringify(receipt, null, 2), [receipt]);
+  const receiptRef = useRef<HTMLElement>(null);
+  const newSessionRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    receiptRef.current?.focus({ preventScroll: true });
+  }, [receipt.receiptId]);
+
+  useEffect(() => {
+    if (confirmNewSession) cancelRef.current?.focus();
+  }, [confirmNewSession]);
+
+  function cancelNewSession() {
+    setConfirmNewSession(false);
+    newSessionRef.current?.focus();
+  }
+  const receiptJson = useMemo(
+    () => JSON.stringify(receipt, null, 2),
+    [receipt],
+  );
 
   async function copyReceiptJson() {
     try {
@@ -43,12 +75,30 @@ export function ReceiptCard({ onNewSession, receipt }: ReceiptCardProps) {
   }
 
   return (
-    <article className="receipt-card">
+    <article
+      className="receipt-card"
+      ref={receiptRef}
+      tabIndex={-1}
+      aria-labelledby="receipt-title"
+    >
       <header className="receipt-card__header">
-        <p className="eyebrow">LOCAL PROOF</p>
-        <h2>{receipt.receiptId}</h2>
+        <div className="receipt-kicker">
+          <p className="eyebrow">NULLTRACE / OBSERVATION ARCHIVE</p>
+          <span>01 / 00000001</span>
+        </div>
+        <div className="receipt-title-row">
+          <div>
+            <p className="eyebrow">LOCAL PROOF</p>
+            <h2 id="receipt-title">
+              Stage Receipt<span>Observation verified.</span>
+            </h2>
+          </div>
+          <ShieldCheck size={54} strokeWidth={1} aria-hidden="true" />
+        </div>
+        <p className="receipt-identifier">{receipt.receiptId}</p>
         <p className="receipt-note">
-          Local prototype record. This is not a server signature or cryptographic identity proof.
+          Local prototype record. This is not a server signature or
+          cryptographic identity proof.
         </p>
       </header>
 
@@ -93,53 +143,122 @@ export function ReceiptCard({ onNewSession, receipt }: ReceiptCardProps) {
         </div>
       </dl>
 
-      <section className="receipt-path" aria-label="Solve path">
-        <p className="eyebrow">SOLVE PATH</p>
+      <details className="receipt-path">
+        <summary>
+          SOLVE PATH{" "}
+          <span>
+            {String(receipt.solvePath.length).padStart(2, "0")} RECORDS{" "}
+            <Plus size={15} aria-hidden="true" />
+          </span>
+        </summary>
         <ol>
           {receipt.solvePath.map((entry, index) => (
-            <RevealItem as="li" delayMs={index * 60} key={`${entry.at}-${entry.action}`}>
+            <RevealItem
+              as="li"
+              delayMs={index * 60}
+              key={`${entry.at}-${entry.action}`}
+            >
               <span>{entry.stage}</span>
               <strong>{entry.action}</strong>
               {entry.detail && <small>{entry.detail}</small>}
             </RevealItem>
           ))}
         </ol>
-      </section>
+      </details>
+
+      <div className="receipt-validation" aria-hidden="true">
+        <div className="receipt-fingerprint">
+          {Array.from(receipt.checksum).map((digit, index) => (
+            <i
+              key={index}
+              style={{
+                height: `${8 + parseInt(digit, 16) * 1.5}px`,
+                animationDelay: `${460 + index * 7}ms`,
+              }}
+            />
+          ))}
+        </div>
+        <span>SHA-256 / LOCAL RECORD</span>
+        <Check size={20} />
+      </div>
 
       <div className="receipt-actions">
-        <button onClick={() => window.print()} type="button">
-          Print
+        <button
+          aria-label="Print"
+          title="Print"
+          onClick={() => window.print()}
+          type="button"
+        >
+          <Printer size={17} aria-hidden="true" />
         </button>
-        <button onClick={() => setJsonVisible((visible) => !visible)} type="button">
-          {jsonVisible ? "Hide JSON" : "View JSON"}
+        <button
+          aria-label={jsonVisible ? "Hide JSON" : "View JSON"}
+          title={jsonVisible ? "Hide JSON" : "View JSON"}
+          aria-expanded={jsonVisible}
+          aria-controls="receipt-json"
+          onClick={() => setJsonVisible((visible) => !visible)}
+          type="button"
+        >
+          <FileJson size={17} aria-hidden="true" />
         </button>
         <button onClick={downloadReceiptJson} type="button">
-          Download JSON
+          <Download size={17} aria-hidden="true" /> Download JSON
         </button>
-        <button onClick={copyReceiptJson} type="button">
-          Copy JSON
+        <button
+          aria-label="Copy JSON"
+          title="Copy JSON"
+          onClick={copyReceiptJson}
+          type="button"
+        >
+          {copyStatus === "copied" ? (
+            <Check size={17} aria-hidden="true" />
+          ) : (
+            <Copy size={17} aria-hidden="true" />
+          )}
         </button>
-        <button onClick={() => setConfirmNewSession(true)} type="button">
-          New Session
+        <button
+          onClick={() => setConfirmNewSession(true)}
+          ref={newSessionRef}
+          type="button"
+        >
+          New Session <ArrowUpRight size={16} aria-hidden="true" />
         </button>
       </div>
 
       {copyStatus !== "idle" && (
         <p className="receipt-copy-status" aria-live="polite">
-          {copyStatus === "copied" ? "Copied to clipboard." : "Clipboard copy was not available."}
+          {copyStatus === "copied"
+            ? "Copied to clipboard."
+            : "Clipboard copy was not available."}
         </p>
       )}
 
-      {jsonVisible && <pre className="receipt-json">{receiptJson}</pre>}
+      {jsonVisible && (
+        <pre className="receipt-json" id="receipt-json">
+          {receiptJson}
+        </pre>
+      )}
 
       {confirmNewSession && (
-        <section className="receipt-confirm" aria-label="Confirm new session">
-          <p>Start a new local session? The current receipt remains visible only if this JSON is kept elsewhere.</p>
+        <section
+          className="receipt-confirm"
+          aria-label="Confirm new session"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              cancelNewSession();
+            }
+          }}
+        >
+          <p>
+            Start a new local session? The current receipt remains visible only
+            if this JSON is kept elsewhere.
+          </p>
           <div>
             <button onClick={confirmStartNewSession} type="button">
               Confirm New Session
             </button>
-            <button onClick={() => setConfirmNewSession(false)} type="button">
+            <button onClick={cancelNewSession} ref={cancelRef} type="button">
               Cancel
             </button>
           </div>

@@ -1,11 +1,21 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import {
+  Aperture,
+  ArrowRight,
+  CornerDownLeft,
+  Fingerprint,
+  ScanLine,
+} from "lucide-react";
 import { BinaryField } from "./components/BinaryField";
-import { CustomCursor } from "./components/CustomCursor";
 import { ObservationGlyph } from "./components/ObservationGlyph";
 import { ReceiptCard } from "./components/ReceiptCard";
 import { UnverifiedModal } from "./components/UnverifiedModal";
 import { SMALL_SIGNAL_DELAYS_MS, SMALL_SIGNALS } from "./domain/argSignals";
-import { ARG_STAGES, type ArgSessionState, type ArgStage } from "./domain/argTypes";
+import {
+  ARG_STAGES,
+  type ArgSessionState,
+  type ArgStage,
+} from "./domain/argTypes";
 import { useArgSession } from "./hooks/useArgSession";
 import { navigateTo, useHashRoute } from "./router/useHashRoute";
 
@@ -20,9 +30,13 @@ export function App() {
   const [glyphClickCount, setGlyphClickCount] = useState(0);
   const [nowMs, setNowMs] = useState(() => getCurrentTimeMs());
   const entryInputRef = useRef<HTMLInputElement>(null);
+  const issueReceiptRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => setNowMs(getCurrentTimeMs()), TICK_INTERVAL_MS);
+    const intervalId = window.setInterval(
+      () => setNowMs(getCurrentTimeMs()),
+      TICK_INTERVAL_MS,
+    );
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -32,7 +46,12 @@ export function App() {
     }
 
     function handleNumericDiscovery(event: KeyboardEvent) {
-      if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) {
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.key.length !== 1
+      ) {
         return;
       }
 
@@ -42,12 +61,17 @@ export function App() {
 
       const target = event.target;
 
-      if (target instanceof HTMLElement && target.closest("input, textarea, select")) {
+      if (
+        target instanceof HTMLElement &&
+        target.closest("input, textarea, select")
+      ) {
         return;
       }
 
       event.preventDefault();
-      setEntryCode((current) => (current.length < 4 ? `${current}${event.key}` : current));
+      setEntryCode((current) =>
+        current.length < 4 ? `${current}${event.key}` : current,
+      );
       actions.inspectEntrySignal("numeric_key");
     }
 
@@ -58,6 +82,8 @@ export function App() {
   useEffect(() => {
     if (state?.currentStage === "INPUT_DISCOVERED") {
       entryInputRef.current?.focus();
+    } else if (state?.currentStage === "VERIFIED") {
+      issueReceiptRef.current?.focus();
     }
   }, [state?.currentStage]);
 
@@ -80,14 +106,24 @@ export function App() {
   const canEnterCode = state.currentStage === "INPUT_DISCOVERED";
   const canSubmitSignal = state.currentStage === "UNVERIFIED";
   const canReopenUnverifiedDialog =
-    state.currentStage === "UNVERIFIED" && !state.entryInteraction.unverifiedDialogOpen;
+    state.currentStage === "UNVERIFIED" &&
+    !state.entryInteraction.unverifiedDialogOpen;
   const canCommitPath = state.currentStage === "STYLE_CLUE_FOUND";
   const canIssueReceipt = state.currentStage === "VERIFIED";
   const inputChannelVisible = state.currentStage !== "ENTRY";
-  const shouldShowReceipt = route === "receipt" || state.currentStage === "RECEIPT_ISSUED";
+  const shouldShowReceipt =
+    route === "receipt" || state.currentStage === "RECEIPT_ISSUED";
   const smallSignals = getSmallSignals(state, nowMs);
   const assistAvailable = isTotalAssistAvailable(state, nowMs);
   const stageOrdinal = ARG_STAGES.indexOf(state.currentStage) + 1;
+  const lastEvent = state.solvePath[state.solvePath.length - 1];
+  const signalFeedback =
+    canSubmitSignal && lastEvent?.action === "computed style clue rejected"
+      ? {
+          id: lastEvent.at,
+          message: "Signal received. Verification unchanged.",
+        }
+      : undefined;
 
   function handleSurfaceSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -143,18 +179,29 @@ export function App() {
   }
 
   return (
-    <main className="app-shell observation-shell">
-      <CustomCursor />
+    <main
+      className="app-shell observation-shell"
+      data-stage={state.currentStage}
+    >
       <BinaryField />
       <header className="apparatus-header">
-        <p className="project-mark">NULLTRACE 4093</p>
-        <p className="session-mark">{state.sessionId.slice(0, 8)}</p>
+        <p className="project-mark">
+          <Aperture size={20} strokeWidth={1.25} aria-hidden="true" /> NULLTRACE{" "}
+          <span>OBSERVATION ARCHIVE</span>
+        </p>
+        <p className="session-mark">
+          <span className="status-dot" /> LOCAL SESSION{" "}
+          <span>{state.sessionId.slice(0, 8)}</span>
+        </p>
       </header>
 
       {shouldShowReceipt ? (
         <section className="receipt-view">
           {state.receipt ? (
-            <ReceiptCard onNewSession={actions.resetSession} receipt={state.receipt} />
+            <ReceiptCard
+              onNewSession={actions.resetSession}
+              receipt={state.receipt}
+            />
           ) : (
             <div className="empty-receipt">
               <p className="eyebrow">NO RECEIPT</p>
@@ -167,37 +214,107 @@ export function App() {
         </section>
       ) : (
         <section className="observation-stage" aria-labelledby="project-title">
-          <h1 className="sr-only" id="project-title">
-            NULLTRACE 4093
-          </h1>
-
-          <ObservationGlyph
-            clickCount={glyphClickCount}
-            clickThreshold={GLYPH_CLICK_THRESHOLD}
-            currentStage={state.currentStage}
-            onGlyphClick={revealInputFromGlyphClick}
-            onKeyboardReveal={revealInputFromFocusedGlyph}
-          />
-
-          <div className="apparatus-readout" aria-label="Observation state">
-            <span>{state.currentStage}</span>
-            <span>
-              S{stageOrdinal}/{toBinary(stageOrdinal, 4)}
-            </span>
-            <span>
-              {String(state.inputAttempts).padStart(2, "0")}/{toBinary(state.inputAttempts, 5)}
-            </span>
-            <span>{state.entryInteraction.routeProfile}</span>
-            <span>{state.startedAt.slice(11, 19)}</span>
+          <div className="observation-heading">
+            <div>
+              <p className="eyebrow">THE UNIDENTIFIED REMAINS.</p>
+              <h1 id="project-title" aria-label="NULLTRACE 4093">
+                NULLTRACE<span>4093</span>
+              </h1>
+            </div>
+            <div className="record-index">
+              <span>OBSERVATION</span>
+              <strong>
+                01<span> / 00000001</span>
+              </strong>
+            </div>
           </div>
 
-          {smallSignals.length > 0 && !state.entryInteraction.unverifiedDialogOpen && (
-            <aside className="small-signal" aria-label="Small signal">
-              {smallSignals.map((signal) => (
-                <p key={signal}>{signal}</p>
-              ))}
-            </aside>
-          )}
+          <div className="observation-field">
+            <div className="field-scan" aria-hidden="true" />
+            <div className="field-registration" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
+            <div
+              className="field-caption field-caption--left"
+              aria-hidden="true"
+            >
+              <span className="field-cross">+</span>
+              <span>
+                ORIGIN
+                <br />
+                <strong>UNKNOWN</strong>
+              </span>
+            </div>
+            <div
+              className="field-caption field-caption--right"
+              aria-hidden="true"
+            >
+              <span>SIGNAL / RETAINED</span>
+              <span className="field-cross">+</span>
+            </div>
+
+            <ObservationGlyph
+              clickCount={glyphClickCount}
+              clickThreshold={GLYPH_CLICK_THRESHOLD}
+              currentStage={state.currentStage}
+              onGlyphClick={revealInputFromGlyphClick}
+              onKeyboardReveal={revealInputFromFocusedGlyph}
+            />
+            <div
+              className="field-coordinate field-coordinate--left"
+              aria-hidden="true"
+            >
+              NT / FIELD RECORD
+            </div>
+            <div
+              className="field-coordinate field-coordinate--right"
+              aria-hidden="true"
+            >
+              {state.startedAt.slice(0, 10).replace(/-/g, ".")}
+            </div>
+          </div>
+
+          <div className="apparatus-readout" aria-label="Observation state">
+            <div className="readout-primary">
+              <span className="readout-label">STATUS</span>
+              <span className="readout-value" key={state.currentStage}>
+                <span className="status-dot" />
+                {state.currentStage}
+              </span>
+            </div>
+            <div>
+              <span className="readout-label">STAGE</span>
+              <span className="readout-value">
+                {String(stageOrdinal).padStart(2, "0")}
+                <small> / {toBinary(stageOrdinal, 4)}</small>
+              </span>
+            </div>
+            <div>
+              <span className="readout-label">ATTEMPTS</span>
+              <span className="readout-value">
+                {String(state.inputAttempts).padStart(2, "0")}
+                <small> / {toBinary(state.inputAttempts, 5)}</small>
+              </span>
+            </div>
+            <div className="readout-route">
+              <span className="readout-label">TRACE</span>
+              <span className="readout-value">
+                {state.entryInteraction.routeProfile}
+              </span>
+            </div>
+          </div>
+
+          {smallSignals.length > 0 &&
+            !state.entryInteraction.unverifiedDialogOpen && (
+              <aside className="small-signal" aria-label="Small signal">
+                {smallSignals.map((signal) => (
+                  <p key={signal}>{signal}</p>
+                ))}
+              </aside>
+            )}
 
           {inputChannelVisible && (
             <form
@@ -205,7 +322,23 @@ export function App() {
               data-active={canEnterCode || canSubmitSignal}
               onSubmit={handleSurfaceSubmit}
             >
-              <label htmlFor="entry-code">Input</label>
+              <label htmlFor="entry-code">
+                <ScanLine size={14} aria-hidden="true" /> INPUT CHANNEL{" "}
+                <span>
+                  {canEnterCode || canSubmitSignal ? "OPEN" : "SEALED"}
+                </span>
+              </label>
+              <p
+                className="entry-feedback"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <span key={signalFeedback?.id ?? state.inputAttempts}>
+                  {canEnterCode
+                    ? state.entryInteraction.lastInputResponse
+                    : signalFeedback?.message}
+                </span>
+              </p>
               <div className="entry-channel__row">
                 <input
                   autoComplete="off"
@@ -227,17 +360,25 @@ export function App() {
                 <button
                   aria-label="Submit recovered input"
                   disabled={
-                    canEnterCode ? entryCode.length !== 4 : !canSubmitSignal || !signalCommand.trim()
+                    canEnterCode
+                      ? entryCode.length !== 4
+                      : !canSubmitSignal || !signalCommand.trim()
                   }
                   type="submit"
                 >
-                  Enter
+                  <CornerDownLeft
+                    size={20}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
                 </button>
               </div>
-              {state.entryInteraction.lastInputResponse && (
-                <p className="entry-feedback" aria-live="polite">
-                  {state.entryInteraction.lastInputResponse}
-                </p>
+              {canEnterCode && (
+                <div className="entry-channel__meter" aria-hidden="true">
+                  {Array.from({ length: 4 }, (_, index) => (
+                    <span key={index} data-filled={index < entryCode.length} />
+                  ))}
+                </div>
               )}
             </form>
           )}
@@ -246,7 +387,7 @@ export function App() {
             <div className="apparatus-action">
               <p>computed token accepted</p>
               <button onClick={actions.commitVerificationPath} type="button">
-                Commit Path
+                Commit Path <ArrowRight size={16} aria-hidden="true" />
               </button>
             </div>
           )}
@@ -255,7 +396,7 @@ export function App() {
             <div className="apparatus-action apparatus-action--unverified">
               <p>UNVERIFIED surface retained</p>
               <button onClick={actions.openUnverifiedDialog} type="button">
-                Reopen
+                Reopen <ArrowRight size={16} aria-hidden="true" />
               </button>
             </div>
           )}
@@ -263,24 +404,40 @@ export function App() {
           {canIssueReceipt && (
             <div className="apparatus-action apparatus-action--verified">
               <p>route integrity stabilized</p>
-              <button onClick={actions.issueReceipt} type="button">
-                Issue Receipt
+              <button
+                onClick={actions.issueReceipt}
+                ref={issueReceiptRef}
+                type="button"
+              >
+                Issue Receipt <ArrowRight size={16} aria-hidden="true" />
               </button>
             </div>
           )}
         </section>
       )}
 
-      {state.currentStage === "UNVERIFIED" && state.entryInteraction.unverifiedDialogOpen && (
-        <UnverifiedModal
-          assistAvailable={assistAvailable}
-          onAssistUsed={actions.markAssistUsed}
-          onClose={actions.closeUnverifiedDialog}
-          onSubmitSignal={actions.submitStyleClue}
-          routeProfile={state.entryInteraction.routeProfile}
-          smallSignals={smallSignals}
-        />
-      )}
+      <footer className="apparatus-footer">
+        <span>
+          <Fingerprint size={15} strokeWidth={1.25} aria-hidden="true" />{" "}
+          ANONYMOUS OBSERVATION
+        </span>
+        <span className="footer-rule" aria-hidden="true" />
+        <span>NOT EVERYTHING LEAVES A TRACE.</span>
+        <span className="footer-edition">NT / 01</span>
+      </footer>
+
+      {state.currentStage === "UNVERIFIED" &&
+        state.entryInteraction.unverifiedDialogOpen && (
+          <UnverifiedModal
+            assistAvailable={assistAvailable}
+            onAssistUsed={actions.markAssistUsed}
+            onClose={actions.closeUnverifiedDialog}
+            onSubmitSignal={actions.submitStyleClue}
+            routeProfile={state.entryInteraction.routeProfile}
+            smallSignals={smallSignals}
+            signalFeedback={signalFeedback}
+          />
+        )}
     </main>
   );
 }
@@ -290,7 +447,10 @@ function getSmallSignals(state: ArgSessionState, nowMs: number): string[] {
   const startedMs = new Date(state.startedAt).getTime();
   const totalElapsedMs = nowMs - startedMs;
 
-  if (state.currentStage === "ENTRY" && totalElapsedMs >= SMALL_SIGNAL_DELAYS_MS.entry) {
+  if (
+    state.currentStage === "ENTRY" &&
+    totalElapsedMs >= SMALL_SIGNAL_DELAYS_MS.entry
+  ) {
     signals.push(SMALL_SIGNALS.entry);
   }
 
@@ -299,7 +459,8 @@ function getSmallSignals(state: ArgSessionState, nowMs: number): string[] {
     state.entryInteraction.lastSubmittedAt &&
     !state.investigationFlags.cssComputedClueFound
   ) {
-    const postCodeElapsedMs = nowMs - new Date(state.entryInteraction.lastSubmittedAt).getTime();
+    const postCodeElapsedMs =
+      nowMs - new Date(state.entryInteraction.lastSubmittedAt).getTime();
 
     if (postCodeElapsedMs >= SMALL_SIGNAL_DELAYS_MS.postCode) {
       signals.push(SMALL_SIGNALS.postCode);
@@ -313,12 +474,18 @@ function getSmallSignals(state: ArgSessionState, nowMs: number): string[] {
   return signals;
 }
 
-function isTotalAssistAvailable(state: ArgSessionState, nowMs: number): boolean {
+function isTotalAssistAvailable(
+  state: ArgSessionState,
+  nowMs: number,
+): boolean {
   if (state.currentStage !== "UNVERIFIED") {
     return false;
   }
 
-  return nowMs - new Date(state.startedAt).getTime() >= SMALL_SIGNAL_DELAYS_MS.totalAssist;
+  return (
+    nowMs - new Date(state.startedAt).getTime() >=
+    SMALL_SIGNAL_DELAYS_MS.totalAssist
+  );
 }
 
 function updateDocumentSignal(stage: ArgStage) {
@@ -375,7 +542,9 @@ function getDevTimeOffsetMs(): number {
     return 0;
   }
 
-  const rawOffset = new URLSearchParams(window.location.search).get("ntTimeOffsetMs");
+  const rawOffset = new URLSearchParams(window.location.search).get(
+    "ntTimeOffsetMs",
+  );
   const offsetMs = rawOffset ? Number.parseInt(rawOffset, 10) : 0;
 
   if (!Number.isFinite(offsetMs)) {

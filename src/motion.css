@@ -1,0 +1,345 @@
+/* Motion decorates the apparatus; puzzle orbit timing stays in styles.css. */
+.field-scan {
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.field-scan::after {
+  content: "";
+  display: block;
+  width: 23%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #9abeb5, transparent);
+  opacity: 0;
+}
+.calibration-sweep {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  stroke: #badbcb;
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+.calibration-sweep__tail {
+  opacity: 0.2;
+}
+.glyph-stage-wave {
+  position: absolute;
+  inset: 14%;
+  border: 1px solid var(--cyan);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+.entry-channel__meter {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 7px;
+  height: 2px;
+}
+.entry-channel__meter > span {
+  background: var(--line);
+}
+.entry-channel__meter > span::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--cyan);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+.entry-channel__meter > span[data-filled="true"]::after {
+  transform: scaleX(1);
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  .apparatus-header {
+    animation: rise-in 850ms var(--ease) both;
+  }
+  .observation-heading h1 {
+    animation: title-resolve 1100ms 100ms var(--ease) both;
+  }
+  .apparatus-readout > div {
+    animation: rise-in 600ms 230ms var(--ease) both;
+  }
+  .apparatus-readout > div:nth-child(2) {
+    animation-delay: 303ms;
+  }
+  .apparatus-readout > div:nth-child(3) {
+    animation-delay: 376ms;
+  }
+  .apparatus-readout > div:nth-child(4) {
+    animation-delay: 449ms;
+  }
+  .apparatus-footer {
+    animation: fade-in 1300ms 400ms both;
+  }
+  .field-scan::after {
+    animation: field-transit 7s 1300ms ease-in-out infinite;
+  }
+  .field-registration i {
+    animation: registration-arrive 900ms 170ms var(--ease) both;
+  }
+  .calibration-boundary,
+  .calibration-arc {
+    stroke-dasharray: 1;
+    animation: calibration-draw 1700ms 130ms var(--ease) both;
+  }
+  .calibration-arc {
+    animation-delay: 300ms;
+  }
+  .calibration-sweep {
+    animation: calibration-sweep 13s linear infinite;
+  }
+  .calibration-diamond {
+    animation: core-breathe 4093ms ease-in-out infinite;
+  }
+  .glyph-stage-wave {
+    animation: stage-acquisition 1100ms var(--ease) both;
+  }
+  .glyph-ripple {
+    animation: contact-ring 850ms var(--ease) both;
+  }
+  .glyph-control:hover .calibration-sweep {
+    stroke: #e0f2e9;
+    stroke-width: 2;
+  }
+  .glyph-control:hover .calibration-diamond {
+    opacity: 1;
+  }
+  .binary-field__fragment {
+    animation: fragment-drift 17s var(--fragment-delay, 0s) ease-in-out infinite
+      alternate;
+  }
+  .entry-channel {
+    animation: channel-unfold 650ms var(--ease) both;
+  }
+  .entry-channel__meter > span::after {
+    transition: transform 300ms var(--ease);
+  }
+  .entry-feedback > span,
+  .signal-feedback > span {
+    animation: rise-in 500ms var(--ease) both;
+  }
+  .entry-channel button svg,
+  .apparatus-action button svg {
+    transition: transform 250ms var(--ease);
+  }
+  .entry-channel button:hover:not(:disabled) svg {
+    transform: translateY(2px);
+  }
+  .apparatus-action button:hover svg {
+    transform: translateX(3px);
+  }
+  .modal-seal {
+    animation: seal-resolve 1100ms var(--ease) both;
+  }
+  .qz7v9 h2 {
+    animation: title-resolve 730ms 80ms var(--ease) both;
+  }
+  .modal-copy p {
+    animation: rise-in 550ms 130ms var(--ease) both;
+  }
+  .modal-copy p:nth-child(2) {
+    animation-delay: 203ms;
+  }
+  .modal-copy p:nth-child(3) {
+    animation-delay: 276ms;
+  }
+  .modal-copy p:nth-child(4) {
+    animation-delay: 349ms;
+  }
+  .modal-signal-entry {
+    animation: channel-unfold 650ms 170ms var(--ease) backwards;
+  }
+  .modal-input-echo span {
+    transition:
+      background 170ms,
+      transform 230ms var(--ease);
+  }
+  .modal-input-echo span[data-active="true"] {
+    transform: scaleY(2);
+  }
+  .receipt-card {
+    animation: receipt-feed 900ms var(--ease) both;
+  }
+  .receipt-grid > div {
+    animation: rise-in 600ms 170ms var(--ease) both;
+  }
+  .receipt-grid > div:nth-child(n + 3) {
+    animation-delay: 243ms;
+  }
+  .receipt-grid > div:nth-child(n + 5) {
+    animation-delay: 316ms;
+  }
+  .receipt-grid > div:nth-child(n + 7) {
+    animation-delay: 389ms;
+  }
+  .receipt-grid > div:nth-child(n + 9) {
+    animation-delay: 462ms;
+  }
+  .receipt-title-row > svg {
+    animation: seal-resolve 900ms 230ms var(--ease) both;
+  }
+  .receipt-title-row > svg path:last-child {
+    stroke-dasharray: 30;
+    animation: verification-draw 700ms 500ms var(--ease) both;
+  }
+  .receipt-fingerprint i {
+    transform-origin: center;
+    animation: fingerprint-develop 500ms var(--ease) both;
+  }
+  .receipt-json,
+  .receipt-confirm,
+  .receipt-copy-status {
+    animation: rise-in 350ms var(--ease) both;
+  }
+  .receipt-path[open] ol {
+    animation: rise-in 400ms var(--ease) both;
+  }
+}
+
+@keyframes title-resolve {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0);
+    transform: translateY(0);
+  }
+}
+@keyframes registration-arrive {
+  from {
+    opacity: 0;
+    scale: 1.7;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes calibration-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes calibration-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes core-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes stage-acquisition {
+  0% {
+    transform: scale(0.45);
+    opacity: 0;
+  }
+  23% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.23);
+    opacity: 0;
+  }
+}
+@keyframes field-transit {
+  0%,
+  17% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  23% {
+    opacity: 0.45;
+  }
+  70% {
+    opacity: 0.45;
+  }
+  83%,
+  100% {
+    transform: translateX(535%);
+    opacity: 0;
+  }
+}
+@keyframes fragment-drift {
+  from {
+    transform: translate(0, -3px);
+  }
+  to {
+    transform: translate(3px, 3px);
+  }
+}
+@keyframes channel-unfold {
+  from {
+    clip-path: inset(-8px 49% -8px 49%);
+    transform: translateY(7px);
+  }
+  to {
+    clip-path: inset(-8px);
+    transform: translateY(0);
+  }
+}
+@keyframes seal-resolve {
+  from {
+    opacity: 0;
+    transform: rotate(-23deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+@keyframes receipt-feed {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100%);
+    transform: translateY(-13px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 -10px);
+    transform: translateY(0);
+  }
+}
+@keyframes verification-draw {
+  from {
+    stroke-dashoffset: 30;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fingerprint-develop {
+  from {
+    opacity: 0;
+    transform: scaleY(0.1);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calibration-sweep,
+  .glyph-stage-wave,
+  .field-scan {
+    display: none;
+  }
+}
