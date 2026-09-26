@@ -3,8 +3,6 @@
 NULLTRACE 4093 is a browser-only vertical prototype for a short mystery ARG experience.
 The frontend presents an unidentified observation device, hides clues in interaction records and computed CSS, and issues a local Stage Receipt after the participant completes the first verification path.
 
-Live site: https://rhazns22.github.io/NULLTRACE4093_FND/
-
 ## Project Status
 
 - Prototype scope: Stage 1 vertical slice
